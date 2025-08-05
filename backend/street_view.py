@@ -9,7 +9,7 @@ def street_view(address):
     geolocator = GoogleV3(api_key=GM_API_KEY)
     
     # Define the address
-    address = "1600 Amphitheatre Parkway, Mountain View, CA"
+    # address = "1600 Amphitheatre Parkway, Mountain View, CA"
     
     # Perform the geocoding
     location = geolocator.geocode(address)
