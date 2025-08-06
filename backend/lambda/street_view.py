@@ -40,7 +40,7 @@ def lambda_handler(event, context):
         if row[0] == cu:
             address = row[13]
             break
-    print(address)
+    # print(address)
     # Perform the geocoding
     location = geolocator.geocode(address)
     
