@@ -1,3 +1,17 @@
+'''
+Environment Variables / Parameters:
+    ADD_SRC_S3_BUCKET : string, S3 bucket for database of customer data
+    GM_API_KEY : string, Personal Google Geocoding API
+    IMAGE_S3_BUCKET : string, S3 bucket for storing the street view image
+    SRC_FILE_NAME : string, S3 bucket for file name of customer data ADD_SRC_S3_BUCKET
+
+Event Json Parameters:
+    CLNT_NBR : string, a customer number
+
+Returns:
+    gsv_0.jpg : .jpg, a street view image of customer's employer company address
+'''
+
 from geopy.geocoders import GoogleV3
 import google_streetview.api
 import boto3, csv, io, json, os
@@ -22,7 +36,7 @@ def lambda_handler(event, context):
     file_content = response['Body'].read().decode('utf-8')
     csv_reader = csv.reader(io.StringIO(file_content))
     for row in csv_reader:
-        print(row)
+        # print(row)
         if row[0] == cu:
             address = row[13]
             break
