@@ -1,10 +1,14 @@
+'''
+Parameters:
+    address : string, customer address
+    GM_API_KEY : string, Google Geocoding API
+    path : string, directory for storing the street view image
+'''
+
 import google_streetview.api
 from geopy.geocoders import GoogleV3
 
-def street_view(address):
-    # Replace 'YOUR_API_KEY' with your actual Google Geo API key
-    GM_API_KEY = 'YOUR_API_KEY' 
-    
+def street_view(address, GM_API_KEY, path):    
     # Initialize the geolocator
     geolocator = GoogleV3(api_key=GM_API_KEY)
     
@@ -22,7 +26,7 @@ def street_view(address):
     else:
         print("Could not find coordinates for the given address.")
 
-    coordinate=','.join(location.latitude, location.longitude)
+    coordinate=','.join([str(location.latitude), str(location.longitude)])
   
     # Define parameters for street view api
     params = [{
@@ -35,6 +39,7 @@ def street_view(address):
     
     # Create a results object
     results = google_streetview.api.results(params)
-    
-    # Download images to directory '"C:\downloads"
-    results.download_links(r"C:\downloads")
+    results.preview()
+
+    # Download images to directory path
+    results.download_links(path)
