@@ -53,23 +53,23 @@ def main():
             st.error("This client has already been processed by the Data Processing Agent.")
         
     if st.button("Run StreetView Agent"):
-        if client_id:
+        if client_entry['Proc2'] is None:
             with st.spinner("Running AI agents..."):
-                # Call FastAPI endpoints to trigger AI agents
-                response1 = requests.post(f"http://localhost:8000/agent1/{client_id}")
-                response2 = requests.post(f"http://localhost:8000/agent2/{client_id}")
-                
-                if response1.status_code == 200:
-                    st.success("Agent 1 completed successfully!")
+                payload = {'CLNT_NBR': client_id, 'Proc1_Bucket': client_entry['Proc1_Bucket'], 'Proc1_Object': client_entry['Proc1_Object']}
+                response = invoke_lambda_function("street_view", payload=payload)
+
+                if response['statusCode'] == 200:
+                    streetview_bucket = response['bucket']
+                    streetview_object = response['image_name']
+
+                    st.success("Data Processing Agent completed successfully!")
+                    client_entry['Proc2'] = 'Completed'
+                    client_entry['Proc2_Bucket'] = streetview_bucket
+                    client_entry['Proc2_Object'] = streetview_object
                 else:
-                    st.error("Agent 1 failed to run.")
-                
-                if response2.status_code == 200:
-                    st.success("Agent 2 completed successfully!")
-                else:
-                    st.error("Agent 2 failed to run.")
+                    st.error("StreetView Agent failed to run.")
         else:
-            st.error("Please enter a valid Client ID.")
+            st.error("This client has already been processed by the StreetView Agent.")
 
 if __name__ == "__main__":
     main()
