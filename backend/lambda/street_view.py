@@ -51,6 +51,10 @@ def lambda_handler(event, context):
         # print(f"Longitude: {location.longitude}")
     if not location:
         print("Could not find coordinates for the given address.")
+        return {
+            'statusCode': 200,
+            'body': json.dumps('Could not find coordinates for the given address.')
+        }
 
     coordinate=','.join([str(location.latitude), str(location.longitude)])
     print(coordinate)
@@ -75,5 +79,8 @@ def lambda_handler(event, context):
     
     return {
         'statusCode': 200,
-        'body': json.dumps('Hello from Lambda Street View!')
+        'body': json.dumps('Found Street View'),
+        'address': address,
+        'bucket': img_bucket_name,
+        'image_name': "gsv_0.jpg"
     }
