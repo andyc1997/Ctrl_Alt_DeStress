@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import requests
 import boto3
+
 from utils.folder_manager import create_client_entry
 
 def main():
@@ -9,17 +10,15 @@ def main():
     
     client_id = st.text_input("Enter Client ID:")
     
-    if st.button("Create Folder"):
+    if st.button("Create New Case"):
         if client_id:
-            folder_created = create_client_entry(client_id)  
-            if folder_created:
+            is_new_case, client_entry = create_client_entry(str(client_id))  
+            if is_new_case:
                 st.success(f"Folder for client '{client_id}' created successfully!")
             else:
                 st.error(f"Folder for client '{client_id}' already exists or could not be created.")
         else:
             st.error("Please enter a valid Client ID.")
-    
-    client_status = 
     
     if st.button("Run AI Agents"):
         if client_id:

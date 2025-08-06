@@ -19,10 +19,10 @@ def create_client_entry(clnt_nbr: str) -> tuple:
     df = pd.read_csv(StringIO(csv_content))
 
     # Check if customer_id already exists
-    bool_clnt_found = clnt_nbr in df['CLNT_NBR'].astype(str).values
+    is_new_case = clnt_nbr not in df['CLNT_NBR'].astype(str).values
 
     # Check if customer_id exists
-    if not bool_clnt_found:
+    if is_new_case:
         # Append new row (customize columns as needed)
         new_row = entry_schema.copy()
         new_row['CLNT_NBR'] = clnt_nbr
@@ -34,8 +34,8 @@ def create_client_entry(clnt_nbr: str) -> tuple:
         s3.put_object(Bucket=bucket_name, Key=object_key, Body=csv_buffer.getvalue())
 
     # Filter the DataFrame for the specific client number
-    this_record = df[df['CLNT_NBR'].astype(str) == clnt_nbr]
-    return bool_clnt_found, this_record
+    client_entry = df[df['CLNT_NBR'].astype(str) == clnt_nbr]
+    return is_new_case, client_entry
 
 # Example usage
 # bool_clnt_found, this_record = create_client_entry('123456')
