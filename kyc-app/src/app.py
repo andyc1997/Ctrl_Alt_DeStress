@@ -37,6 +37,7 @@ def main():
                 st.error(f"New case for client '{client_id}' already exists or could not be created.")
         else:
             st.error("Please enter a valid Client ID.")
+
         st.session_state.client_entry = client_entry.iloc[0].to_dict()
     
     # Check if client entry exists 
@@ -69,6 +70,10 @@ def main():
             st.info("This client ID does not exist. Please create a new case first.")
 
     if st.button("Run StreetView Agent"):
+        response = s3.get_object(Bucket=entry_bucket_name, Key=entry_object_key)
+        csv_content = response['Body'].read().decode('utf-8')
+        st.session_state.df_entry_table = pd.read_csv(StringIO(csv_content))
+
         if pd.isna(st.session_state.client_entry['Proc1']):
             with st.spinner("Running AI agents..."):
                 payload = {'CLNT_NBR': st.session_state.df_clnt_info['CU Number'], 
@@ -110,6 +115,10 @@ def main():
             st.image(image_bytes, width=400)    
 
     if st.button("Run Webscraping Agent"):
+        response = s3.get_object(Bucket=entry_bucket_name, Key=entry_object_key)
+        csv_content = response['Body'].read().decode('utf-8')
+        st.session_state.df_entry_table = pd.read_csv(StringIO(csv_content))
+        
         if pd.isna(st.session_state.client_entry['Proc2']):
             with st.spinner("Running AI agents..."):
                 payload = {
