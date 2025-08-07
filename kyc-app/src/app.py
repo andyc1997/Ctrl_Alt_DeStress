@@ -88,26 +88,33 @@ def main():
 
             response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
             image_bytes = response['Body'].read()
-            st.image(image_bytes)
-            
+            st.image(image_bytes, width=400)
+
             st.info("This client has already been processed by the StreetView Agent.")
 
     if st.button("Run Webscraping Agent"):
-        if client_entry['Proc3'] is None:
+        if pd.isna(st.session_state.client_entry['Proc2']):
             with st.spinner("Running AI agents..."):
-                payload = {'CLNT_NBR': client_id, 
-                           'Proc1_Bucket': client_entry['Proc1_Bucket'], 'Proc1_Object': client_entry['Proc1_Object'],
-                           'Proc2_Bucket': client_entry['Proc2_Bucket'], 'Proc2_Object': client_entry['Proc2_Object']}
-                response = invoke_lambda_function("ExternalDataAgent", payload=payload)
+                payload = {
+                        "CLNT_NBR" : st.session_state.df_clnt_info['CU Number'],
+                        "CUSTOMER_NAME" : st.session_state.df_clnt_info['Name'],
+                        "OCCUPATION" : st.session_state.df_clnt_info['Position'],
+                        "COMPANY" : st.session_state.df_clnt_info['Employer'],
+                        "LOCATION" : st.session_state.df_clnt_info['Employer Address']
+                    }
+                response = invoke_lambda_function("amazon_titan_s", payload=payload)
 
                 if response['statusCode'] == 200:
                     external_data_bucket = response['bucket']
                     external_data_object = response['object_key']
 
                     st.success("External Data Agent completed successfully!")
-                    client_entry['Proc3'] = 'Completed'
-                    client_entry['Proc3_Bucket'] = external_data_bucket
-                    client_entry['Proc3_Object'] = external_data_object
+                    st.session_state.client_entry['Proc2'] = 'Completed'
+                    st.session_state.client_entry['Proc2_Bucket'] = external_data_bucket
+                    st.session_state.client_entry['Proc2_Object'] = external_data_object
+
+                    st.success("Webscraping Agent completed successfully!")
+                    st.write(response['url_statements'])
                 else:
                     st.error("Webscraping Agent failed to run.")
         else:
