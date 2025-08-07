@@ -7,6 +7,8 @@ from io import StringIO
 from utils.folder_manager import create_client_entry, check_client_entry
 from utils.invoke_lambda_function import invoke_lambda_function
 
+
+
 def main():
     st.title("KYC Intelligent Agent Management")
 
@@ -14,11 +16,19 @@ def main():
     client_id = st.text_input("Enter Client ID:")
     s3 = boto3.client('s3')
 
+    # Get entry details
+    entry_bucket_name = 'client-master-entry'
+    entry_object_key = 'clnt_master_entry.csv'
+
     # Initialize session state variables
     if 'client_entry' not in st.session_state:
         st.session_state.client_entry = None
     if 'df_clnt_info' not in st.session_state:
         st.session_state.df_clnt_info = None
+    if 'df_all_clnt_info' not in st.session_state:
+        st.session_state.df_all_clnt_info = None
+    if 'run_streetview' not in st.session_state:
+        st.session_state.run_streetview = False
     
     if st.button("Create New Case"):
         if client_id:
@@ -47,7 +57,6 @@ def main():
     if st.button("Run Data Processing"):
         if client_id:
             with st.spinner("Running Data Processing..."):
-                payload = {'CLNT_NBR': client_id}
                 internal_data_bucket = "internaldataprocess"
                 internal_data_object = "real_cu_list.csv"
 
@@ -56,13 +65,14 @@ def main():
                 csv_content = response['Body'].read().decode('utf-8')
                 df = pd.read_csv(StringIO(csv_content), skiprows=10)
                 df_clnt_info = df[df['CU Number'].astype(str) == str(client_id)]
+            st.session_state.df_all_clnt_info = df.copy()
             st.session_state.df_clnt_info = df_clnt_info.iloc[0].to_dict()
             st.dataframe(df_clnt_info)                
         else:
             st.info("This client ID does not exist. Please create a new case first.")
-
-    if st.button("Run StreetView Agent"):
-        if pd.isna(st.session_state.client_entry['Proc1']):
+        
+    if pd.isna(st.session_state.client_entry['Proc1']):
+        if st.session_state.run_streetview:
             with st.spinner("Running AI agents..."):
                 payload = {'CLNT_NBR': st.session_state.df_clnt_info['CU Number'], 
                            'ADDRESS': st.session_state.df_clnt_info['Employer Address']}
@@ -73,24 +83,31 @@ def main():
                     streetview_object = response['image_name']
 
                     st.success("StreetView Agent completed successfully!")
-                    st.session_state.client_entry['Proc1'] = 'Completed'
-                    st.session_state.client_entry['Proc1_Bucket'] = streetview_bucket
-                    st.session_state.client_entry['Proc1_Object'] = streetview_object
+                    cu_pointer = st.session_state.df_all_clnt_info['CU Number'].astype(str) == str(client_id)
+                    
+                    st.session_state.df_all_clnt_info[cu_pointer]['Proc1'] = 'Completed'
+                    st.session_state.df_all_clnt_info[cu_pointer]['Proc1_Bucket'] = streetview_bucket
+                    st.session_state.df_all_clnt_info[cu_pointer]['Proc1_Object'] = streetview_object
 
+                    csv_buffer = StringIO()
+                    df.to_csv(csv_buffer, index=False)
+                    s3.put_object(Bucket=entry_bucket_name, Key=entry_object_key, Body=csv_buffer.getvalue())
                     response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
                     image_bytes = response['Body'].read()
                     st.image(image_bytes)
+
                 else:
                     st.info("StreetView Agent failed to run. Please try again later.")
-        else:
-            streetview_bucket = st.session_state.client_entry['Proc1_Bucket']
-            streetview_object = st.session_state.client_entry['Proc1_Object']
+    else:
+        st.checkbox("Run StreetView Agent", value=True, key="run_streetview")
+        streetview_bucket = st.session_state.client_entry['Proc1_Bucket']
+        streetview_object = st.session_state.client_entry['Proc1_Object']
 
-            response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
-            image_bytes = response['Body'].read()
-            st.image(image_bytes, width=400)
+        response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
+        image_bytes = response['Body'].read()
+        st.image(image_bytes, width=400)
 
-            st.info("This client has already been processed by the StreetView Agent.")
+        st.info("This client has already been processed by the StreetView Agent.")
 
     if st.button("Run Webscraping Agent"):
         if pd.isna(st.session_state.client_entry['Proc2']):
