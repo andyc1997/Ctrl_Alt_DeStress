@@ -7,9 +7,18 @@ Environment Variables / Parameters:
 
 Event Json Parameters:
     CLNT_NBR : string, a customer number
+    ADDRRESS : string, customer's company address
+    *sample json input : {
+                            "CLNT_NBR" : "123456704",
+                            "ADDRESS" : "270 Park Avenue,. New York City. ,. United States"
+                         }
 
 Returns:
-    gsv_0.jpg : .jpg, a street view image of customer's employer company address
+    statusCode : integer, status code
+    body : string, 
+    address : address, customer address
+    bucket : img_bucket_name, S3 bucket name for storing images
+    image_name : .jpg, a street view image of customer's employer company address
 '''
 
 from geopy.geocoders import GoogleV3
@@ -30,16 +39,20 @@ def lambda_handler(event, context):
 
     # Get customer number from event json input
     cu = event['CLNT_NBR']
+    address = str(event['ADDRESS']).strip()
 
     # Get address from real customer list by customer number
-    response = s3.get_object(Bucket=add_src_bucket_name, Key=src_file)
-    file_content = response['Body'].read().decode('utf-8')
-    csv_reader = csv.reader(io.StringIO(file_content))
-    for row in csv_reader:
+    # response = s3.get_object(Bucket=add_src_bucket_name, Key=src_file)
+    # file_content = response['Body'].read().decode('utf-8')
+    # csv_reader = csv.reader(io.StringIO(file_content))
+    # for row in csv_reader:
         # print(row)
-        if row[0] == cu:
-            address = row[13]
-            break
+        # if row[0] == cu:
+            # address = row[13]
+            # cu_name = row[1]
+            # company = row[4]
+            # occupation = row[3]
+            # break
     # print(address)
     # Perform the geocoding
     location = geolocator.geocode(address)
@@ -60,10 +73,10 @@ def lambda_handler(event, context):
     print(coordinate)
     # Define parameters for street view api
     params = [{
-      'size': '600x300', # max 640x640 pixels
+      'size': '640x640', # max 640x640 pixels
       'location': coordinate,
-      'heading': '151.78',
-      'pitch': '-0.76',
+      'heading': '205',
+      'pitch': '55',
       'key': os.environ.get("GM_API_KEY")
     }]
     
@@ -82,5 +95,8 @@ def lambda_handler(event, context):
         'body': json.dumps('Found Street View'),
         'address': address,
         'bucket': img_bucket_name,
-        'image_name': "gsv_0.jpg"
+        'image_name': "gsv_0.jpg",
+        # 'cu_name': cu_name,
+        # 'company': occupation,
+        # 'industry'
     }
