@@ -87,9 +87,9 @@ def main():
                     st.success("StreetView Agent completed successfully!")
                     cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
                     
-                    st.session_state.df_entry_table[cu_pointer]['Proc1'] = 'Completed'
-                    st.session_state.df_entry_table[cu_pointer]['Proc1_Bucket'] = streetview_bucket
-                    st.session_state.df_entry_table[cu_pointer]['Proc1_Object'] = streetview_object
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc1'] = 'Completed'
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc1_Bucket'] = streetview_bucket
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc1_Object'] = streetview_object
 
                     print(type(st.session_state.df_entry_table))
                     print(st.session_state.df_entry_table)
@@ -118,7 +118,7 @@ def main():
         response = s3.get_object(Bucket=entry_bucket_name, Key=entry_object_key)
         csv_content = response['Body'].read().decode('utf-8')
         st.session_state.df_entry_table = pd.read_csv(StringIO(csv_content))
-        
+
         if pd.isna(st.session_state.client_entry['Proc2']):
             with st.spinner("Running AI agents..."):
                 payload = {
@@ -137,9 +137,9 @@ def main():
                     st.success("External Data Agent completed successfully!")
                     cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
                     
-                    st.session_state.df_entry_table[cu_pointer]['Proc2'] = 'Completed'
-                    st.session_state.df_entry_table[cu_pointer]['Proc2_Bucket'] = external_data_bucket
-                    st.session_state.df_entry_table[cu_pointer]['Proc2_Object'] = external_data_object
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc2'] = 'Completed'
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc2_Bucket'] = external_data_bucket
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc2_Object'] = external_data_object
 
                     csv_buffer = StringIO()
                     st.session_state.df_entry_table.to_csv(csv_buffer, index=False)
