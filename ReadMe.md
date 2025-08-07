@@ -34,7 +34,7 @@ This system automates **KYC (Know Your Customer)** and **Source of Wealth (SOW)*
 <img src="./backend/lambda/google_street_view/gsv_0.jpg" width="250" height="250" />
 
 **Step B4.2:** Runs **web scraping** to collect public data (occupation, salary, location, etc.).
-* **Lambda Function URL**: <https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions/street_view?tab=code](https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions/externaldataprocesscode?tab=code)>
+* **Lambda Function URL**: <https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions/externaldataprocesscode?tab=code>
 * Event json
 ```
   {
