@@ -12,8 +12,8 @@ def main():
 
     # Get client ID from user input
     client_id = st.text_input("Enter Client ID:")
-    st.session_state['client_entry'] = {}
-    st.session_state['df_clnt_info'] = {}
+    st.session_state.client_entry = None
+    st.session_state.df_clnt_info = None
     
     if st.button("Create New Case"):
         if client_id:
@@ -24,7 +24,7 @@ def main():
                 st.error(f"New case for client '{client_id}' already exists or could not be created.")
         else:
             st.error("Please enter a valid Client ID.")
-        st.session_state['client_entry'] = client_entry
+        st.session_state.client_entry = client_entry
     
     # Check if client entry exists 
     if st.button("Check Client ID"):
@@ -36,7 +36,7 @@ def main():
                 st.success(f"The client for '{client_id}' exists.")
         else:
             st.error("Please enter a valid Client ID.")
-        st.session_state['client_entry'] = client_entry
+        st.session_state.client_entry. = client_entry
         st.dataframe(client_entry)
     
     if st.button("Run Data Processing"):
@@ -54,12 +54,12 @@ def main():
                 csv_content = response['Body'].read().decode('utf-8')
                 df = pd.read_csv(StringIO(csv_content), skiprows=10)
                 df_clnt_info = df[df['CU Number'].astype(str) == str(client_id)]
-            st.session_state['df_clnt_info'] = df_clnt_info
+            st.session_state.df_clnt_info = df_clnt_info
             st.dataframe(df_clnt_info)
                 
         else:
             st.error("This client ID does not exist. Please create a new case first.")
-        
+    print('Session_state:\n', st.session_state)
     if st.button("Run StreetView Agent"):
         if client_entry['Proc1'].isnull():
             with st.spinner("Running AI agents..."):
