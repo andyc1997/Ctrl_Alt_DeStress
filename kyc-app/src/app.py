@@ -87,14 +87,14 @@ def main():
                     streetview_object = response['image_name']
 
                     st.success("StreetView Agent completed successfully!")
-                    cu_pointer = st.session_state.client_entry['CLNT_NBR'].astype(str) == str(client_id)
+                    cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
                     
-                    st.session_state.client_entry[cu_pointer]['Proc1'] = 'Completed'
-                    st.session_state.client_entry[cu_pointer]['Proc1_Bucket'] = streetview_bucket
-                    st.session_state.client_entry[cu_pointer]['Proc1_Object'] = streetview_object
+                    st.session_state.df_entry_table[cu_pointer]['Proc1'] = 'Completed'
+                    st.session_state.df_entry_table[cu_pointer]['Proc1_Bucket'] = streetview_bucket
+                    st.session_state.df_entry_table[cu_pointer]['Proc1_Object'] = streetview_object
 
                     csv_buffer = StringIO()
-                    st.session_state.client_entry.to_csv(csv_buffer, index=False)
+                    st.session_state.df_entry_table.to_csv(csv_buffer, index=False)
                     s3.put_object(Bucket=entry_bucket_name, Key=entry_object_key, Body=csv_buffer.getvalue())
                     response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
                     image_bytes = response['Body'].read()
@@ -129,14 +129,14 @@ def main():
                     external_data_object = response['object_key']
 
                     st.success("External Data Agent completed successfully!")
-                    cu_pointer = st.session_state.client_entry['CLNT_NBR'].astype(str) == str(client_id)
+                    cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
                     
-                    st.session_state.client_entry[cu_pointer]['Proc2'] = 'Completed'
-                    st.session_state.client_entry[cu_pointer]['Proc2_Bucket'] = external_data_bucket
-                    st.session_state.client_entry[cu_pointer]['Proc2_Object'] = external_data_object
+                    st.session_state.df_entry_table[cu_pointer]['Proc2'] = 'Completed'
+                    st.session_state.df_entry_table[cu_pointer]['Proc2_Bucket'] = external_data_bucket
+                    st.session_state.df_entry_table[cu_pointer]['Proc2_Object'] = external_data_object
 
                     csv_buffer = StringIO()
-                    st.session_state.client_entry.to_csv(csv_buffer, index=False)
+                    st.session_state.df_entry_table.to_csv(csv_buffer, index=False)
                     s3.put_object(Bucket=entry_bucket_name, Key=entry_object_key, Body=csv_buffer.getvalue())
 
                     st.success("Webscraping Agent completed successfully!")
