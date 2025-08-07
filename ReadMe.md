@@ -23,8 +23,8 @@ It is triggered by a button event in streamlit user-interface.
 }
 ```
 
-## 2) Amazon Titan Text Express v1  
-This function is to web scrape customer's working background based on customer name, company name, company address.  
+## 2) Amazon Titan Web Searching 
+This function is using Amazon Titan Text Express v1 to web scrape customer's working background based on customer name, company name, company address.  
 It is triggered by a button event in streamlit user-interface.  
 
 **Lambda Function URL**: <[https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions/street_view?tab=code](https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions/externaldataprocesscode?tab=code)>  
