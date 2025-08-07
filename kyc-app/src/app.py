@@ -36,13 +36,13 @@ def main():
         if client_id:
             is_new_case, client_entry = check_client_entry(str(client_id))
             if is_new_case:
-                st.error(f"The client for '{client_id}' does not exist.")
+                st.info(f"The client for '{client_id}' does not exist.")
             else:
                 st.success(f"The client for '{client_id}' exists.")
+                st.session_state.client_entry = client_entry.iloc[0].to_dict()
+                st.dataframe(client_entry)
         else:
-            st.error("Please enter a valid Client ID.")
-        st.session_state.client_entry = client_entry.iloc[0].to_dict()
-        st.dataframe(client_entry)
+            st.info("Please enter a valid Client ID.")
     
     if st.button("Run Data Processing"):
         if client_id:
@@ -59,7 +59,7 @@ def main():
             st.session_state.df_clnt_info = df_clnt_info.iloc[0].to_dict()
             st.dataframe(df_clnt_info)                
         else:
-            st.error("This client ID does not exist. Please create a new case first.")
+            st.info("This client ID does not exist. Please create a new case first.")
 
     if st.button("Run StreetView Agent"):
         if pd.isna(st.session_state.client_entry['Proc1']):
@@ -81,9 +81,16 @@ def main():
                     image_bytes = response['Body'].read()
                     st.image(image_bytes)
                 else:
-                    st.error("StreetView Agent failed to run.")
+                    st.info("StreetView Agent failed to run. Please try again later.")
         else:
-            st.error("This client has already been processed by the StreetView Agent.")
+            streetview_bucket = st.session_state.client_entry['Proc1_Bucket']
+            streetview_object = st.session_state.client_entry['Proc1_Object']
+
+            response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
+            image_bytes = response['Body'].read()
+            st.image(image_bytes)
+            
+            st.info("This client has already been processed by the StreetView Agent.")
 
     if st.button("Run Webscraping Agent"):
         if client_entry['Proc3'] is None:
