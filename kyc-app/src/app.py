@@ -136,6 +136,7 @@ def main():
                     st.session_state.df_entry_table[cu_pointer]['Proc2_Bucket'] = external_data_bucket
                     st.session_state.df_entry_table[cu_pointer]['Proc2_Object'] = external_data_object
 
+                    print(type(st.session_state.df_entry_table))
                     print(st.session_state.df_entry_table)
 
                     csv_buffer = StringIO()
