@@ -15,7 +15,7 @@ Event Json Parameters:
 
 Returns:
     statusCode : integer, status code
-    body : string, 
+    body : string, result statement
     address : address, customer address
     bucket : img_bucket_name, S3 bucket name for storing images
     image_name : .jpg, a street view image of customer's employer company address
