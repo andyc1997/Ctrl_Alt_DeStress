@@ -1,11 +1,12 @@
 import streamlit as st
 import pandas as pd
 import boto3
+import time 
 
 from io import StringIO
 from utils.folder_manager import create_client_entry, check_client_entry, get_client_entry
 from utils.invoke_lambda_function import invoke_lambda_function
-from utils.invoke_s3 import s3_read_csv, s3_write_csv
+from utils.invoke_s3 import s3_read_csv, s3_write_csv, s3_file_exists
 
 def main():
     st.title("KYC Intelligent Agent Management")
@@ -145,7 +146,7 @@ def main():
         else:
             st.info("This client has already been processed by the External Data Agent.")
 
-    if st.button("Run Transcribe Agent"):     
+    if st.button("Run Textract Agent"):     
         if pd.isna(st.session_state.client_entry['Proc3']):
             uploaded_file = st.file_uploader("Choose a file to upload")
             if uploaded_file is not None:
@@ -154,20 +155,29 @@ def main():
                 # Define S3 bucket and object key (filename)
                 upload_bucket = "doc-input-external"
                 upload_key = uploaded_file.name
+                output_bucket = "output-internal-cld/output"
 
                 # Upload to S3
                 response = s3.put_object(Bucket=upload_bucket, Key=upload_key, Body=file_bytes)
-                if response == 200:
-                    s3.copy_object(
-                        Bucket='doc-output-external',
-                    )
-
                 st.success(f"File '{uploaded_file.name}' uploaded to S3 bucket '{upload_bucket}'.")
 
+                # Give it some buffer time and only show download button if the file is processed
+                output_key = "filtered_" + uploaded_file.name.split('.')[0] + ".csv"
+                time.sleep(30)
+                exists = s3_file_exists(s3, output_bucket, output_key)
+                if exists:
+                    st.download_button(
+                        label="Download Extracted Data",
+                        data=s3_read_csv(s3, output_bucket, output_key),
+                        file_name=output_key,
+                        mime="text/csv"
+                    )
+                
+                # Anyway, Textract should always extract something, let write it to the entry table and wait for its completion
                 cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
                 st.session_state.df_entry_table.loc[cu_pointer, 'Proc3'] = 'Completed'
-                st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Bucket'] = external_data_bucket
-                st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Object'] = external_data_object
+                st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Bucket'] = output_bucket
+                st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Object'] = output_key
                 s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
 
 
