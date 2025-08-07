@@ -1,9 +1,9 @@
 '''
 Environment Variables / Parameters:
-    ADD_SRC_S3_BUCKET : string, S3 bucket for database of customer data
+    # ADD_SRC_S3_BUCKET : string, S3 bucket for database of customer data
     GM_API_KEY : string, Personal Google Geocoding API
     IMAGE_S3_BUCKET : string, S3 bucket for storing the street view image
-    SRC_FILE_NAME : string, S3 bucket for file name of customer data ADD_SRC_S3_BUCKET
+    # SRC_FILE_NAME : string, S3 bucket for file name of customer data ADD_SRC_S3_BUCKET
 
 Event Json Parameters:
     CLNT_NBR : string, a customer number
@@ -34,8 +34,8 @@ def lambda_handler(event, context):
 
     # Initialize bucket name
     img_bucket_name = os.environ.get("IMAGE_S3_BUCKET")
-    add_src_bucket_name = os.environ.get("ADD_SRC_S3_BUCKET")
-    src_file = os.environ.get("SRC_FILE_NAME")
+    # add_src_bucket_name = os.environ.get("ADD_SRC_S3_BUCKET")
+    # src_file = os.environ.get("SRC_FILE_NAME")
 
     # Get customer number from event json input
     cu = event['CLNT_NBR']
