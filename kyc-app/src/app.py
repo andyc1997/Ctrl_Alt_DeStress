@@ -153,6 +153,18 @@ def main():
 
     if st.button("Run Transcribe Agent"):     
         if pd.isna(st.session_state.client_entry['Proc3']):
+            uploaded_file = st.file_uploader("Choose a file to upload")
+            if uploaded_file is not None:
+                # Read file bytes
+                file_bytes = uploaded_file.read()
+                # Define S3 bucket and object key (filename)
+                upload_bucket = "your-upload-bucket-name"
+                upload_key = uploaded_file.name
+
+                # Upload to S3
+                s3.put_object(Bucket=upload_bucket, Key=upload_key, Body=file_bytes)
+                st.success(f"File '{uploaded_file.name}' uploaded to S3 bucket '{upload_bucket}'.")
+
             with st.spinner("Running AI agents..."):
                 payload = {
                         "CLNT_NBR" : st.session_state.df_clnt_info['CU Number'],
