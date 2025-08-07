@@ -1,7 +1,8 @@
 import streamlit as st
-import os
-import requests
+import pandas as pd
 import boto3
+
+from io import StringIO
 
 from utils.folder_manager import create_client_entry, check_client_entry
 from utils.invoke_lambda_function import invoke_lambda_function
@@ -33,24 +34,25 @@ def main():
         else:
             st.error("Please enter a valid Client ID.")
     
-    if st.button("Run Data Processing Agent"):
-        if client_entry['Proc1'] is None:
-            with st.spinner("Running AI agents..."):
+    if st.button("Run Data Processing"):
+        if client_id:
+            with st.spinner("Running Data Processing..."):
                 payload = {'CLNT_NBR': client_id}
-                response = invoke_lambda_function("TextractToCSV", payload=payload)
+                internal_data_bucket = "internaldataprocess"
+                internal_data_object = "real_cu_list1.csv"
 
-                if response['statusCode'] == 200:
-                    data_processing_bucket = response['bucket']
-                    data_processing_object = response['object_key']
+                # Initialize S3 client
+                s3 = boto3.client('s3')
 
-                    st.success("Data Processing Agent completed successfully!")
-                    client_entry['Proc1'] = 'Completed'
-                    client_entry['Proc1_Bucket'] = data_processing_bucket
-                    client_entry['Proc1_Object'] = data_processing_object
-                else:
-                    st.error("Data Processing Agent failed to run.")
+                # Download CSV from S3
+                response = s3.get_object(Bucket=internal_data_bucket, Key=internal_data_object)
+                csv_content = response['Body'].read().decode('utf-8')
+                df = pd.read_csv(StringIO(csv_content), skiprows=10, header=True)
+                df_clnt_info = df[df['CLNT_NBR'] == str(client_id)]
+            st.dataframe(df_clnt_info)
+                
         else:
-            st.error("This client has already been processed by the Data Processing Agent.")
+            st.error("This client ID does not exist. Please create a new case first.")
         
     if st.button("Run StreetView Agent"):
         if client_entry['Proc2'] is None:
