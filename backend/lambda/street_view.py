@@ -26,6 +26,7 @@ import google_streetview.api
 import boto3, csv, io, json, os
 
 def lambda_handler(event, context):
+    # Extract Google API Key from evironment variable
     # Initialize the geolocator
     geolocator = GoogleV3(api_key=os.environ.get("GM_API_KEY"))
 
@@ -38,7 +39,7 @@ def lambda_handler(event, context):
     # src_file = os.environ.get("SRC_FILE_NAME")
 
     # Get customer number from event json input
-    cu = event['CLNT_NBR']
+    cu = str(event['CLNT_NBR']).strip()
     address = str(event['ADDRESS']).strip()
 
     # Get address from real customer list by customer number
