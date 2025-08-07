@@ -35,3 +35,4 @@ It is triggered by a button event in streamlit user-interface.
 ```
 
 **Street view image captured from Google Map**
+![google street view](./gsv_0.jpg)
