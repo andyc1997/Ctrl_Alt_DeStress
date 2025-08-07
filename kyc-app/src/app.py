@@ -83,13 +83,14 @@ def main():
                     streetview_object = response['image_name']
 
                     st.success("StreetView Agent completed successfully!")
-                    cu_pointer = st.session_state.df_all_clnt_info['CU Number'].astype(str) == str(client_id)
-                    st.session_state.df_all_clnt_info[cu_pointer]['Proc1'] = 'Completed'
-                    st.session_state.df_all_clnt_info[cu_pointer]['Proc1_Bucket'] = streetview_bucket
-                    st.session_state.df_all_clnt_info[cu_pointer]['Proc1_Object'] = streetview_object
+                    cu_pointer = st.session_state.client_entry['CLNT_NBR'].astype(str) == str(client_id)
+                    
+                    st.session_state.client_entry[cu_pointer]['Proc1'] = 'Completed'
+                    st.session_state.client_entry[cu_pointer]['Proc1_Bucket'] = streetview_bucket
+                    st.session_state.client_entry[cu_pointer]['Proc1_Object'] = streetview_object
 
                     csv_buffer = StringIO()
-                    st.session_state.df_all_clnt_info.to_csv(csv_buffer, index=False)
+                    st.session_state.client_entry.to_csv(csv_buffer, index=False)
                     s3.put_object(Bucket=entry_bucket_name, Key=entry_object_key, Body=csv_buffer.getvalue())
                     response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
                     image_bytes = response['Body'].read()
@@ -103,9 +104,9 @@ def main():
 
             response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
             image_bytes = response['Body'].read()
-            st.image(image_bytes, width=400)
 
-        st.info("This client has already been processed by the StreetView Agent.")
+            st.info("This client has already been processed by the StreetView Agent.")
+            st.image(image_bytes, width=400)    
 
     if st.button("Run Webscraping Agent"):
         if pd.isna(st.session_state.client_entry['Proc2']):
@@ -124,15 +125,24 @@ def main():
                     external_data_object = response['object_key']
 
                     st.success("External Data Agent completed successfully!")
-                    st.session_state.client_entry['Proc2'] = 'Completed'
-                    st.session_state.client_entry['Proc2_Bucket'] = external_data_bucket
-                    st.session_state.client_entry['Proc2_Object'] = external_data_object
+                    cu_pointer = st.session_state.client_entry['CLNT_NBR'].astype(str) == str(client_id)
+                    
+                    st.session_state.client_entry[cu_pointer]['Proc2'] = 'Completed'
+                    st.session_state.client_entry[cu_pointer]['Proc2_Bucket'] = external_data_bucket
+                    st.session_state.client_entry[cu_pointer]['Proc2_Object'] = external_data_object
+
+                    csv_buffer = StringIO()
+                    st.session_state.client_entry.to_csv(csv_buffer, index=False)
+                    s3.put_object(Bucket=entry_bucket_name, Key=entry_object_key, Body=csv_buffer.getvalue())
 
                     st.success("Webscraping Agent completed successfully!")
-                    st.write(response['url_statements'])
+                    # st.write(response['url_statements'])
                 else:
                     st.error("Webscraping Agent failed to run.")
         else:
-            st.error("This client has already been processed by the External Data Agent.")
+            st.info("This client has already been processed by the External Data Agent.")
+
+
+
 if __name__ == "__main__":
     main()
