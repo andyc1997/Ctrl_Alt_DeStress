@@ -34,7 +34,7 @@ def main():
 
     if st.button("Create New Case"):
         if client_id:
-            is_new_case, client_entry = create_client_entry(str(client_id))  
+            is_new_case, client_entry = create_client_entry(str(client_id), entry_bucket_name, entry_object_key)  
             if is_new_case:
                 st.success(f"New case for client '{client_id}' created successfully!")
             else:
@@ -47,7 +47,7 @@ def main():
     # Check if client entry exists 
     if st.button("Check Client ID"):
         if client_id:
-            is_new_case, client_entry = check_client_entry(str(client_id))
+            is_new_case, client_entry = check_client_entry(str(client_id), entry_bucket_name, entry_object_key)
             if is_new_case:
                 st.info(f"The client for '{client_id}' does not exist.")
             else:
@@ -94,9 +94,6 @@ def main():
                     st.session_state.df_entry_table.loc[cu_pointer, 'Proc1'] = 'Completed'
                     st.session_state.df_entry_table.loc[cu_pointer, 'Proc1_Bucket'] = streetview_bucket
                     st.session_state.df_entry_table.loc[cu_pointer, 'Proc1_Object'] = streetview_object
-
-                    print(type(st.session_state.df_entry_table))
-                    print(st.session_state.df_entry_table)
 
                     csv_buffer = StringIO()
                     st.session_state.df_entry_table.to_csv(csv_buffer, index=False)
@@ -145,7 +142,6 @@ def main():
                     s3.put_object(Bucket=entry_bucket_name, Key=entry_object_key, Body=csv_buffer.getvalue())
 
                     st.success("Webscraping Agent completed successfully!")
-                    # st.write(response['url_statements'])
                 else:
                     st.error("Webscraping Agent failed to run.")
         else:
@@ -158,44 +154,14 @@ def main():
                 # Read file bytes
                 file_bytes = uploaded_file.read()
                 # Define S3 bucket and object key (filename)
-                upload_bucket = "your-upload-bucket-name"
+                upload_bucket = "doc-input-external"
                 upload_key = uploaded_file.name
 
                 # Upload to S3
                 s3.put_object(Bucket=upload_bucket, Key=upload_key, Body=file_bytes)
                 st.success(f"File '{uploaded_file.name}' uploaded to S3 bucket '{upload_bucket}'.")
+        
 
-            with st.spinner("Running AI agents..."):
-                payload = {
-                        "CLNT_NBR" : st.session_state.df_clnt_info['CU Number'],
-                        "CUSTOMER_NAME" : st.session_state.df_clnt_info['Name'],
-                        "OCCUPATION" : st.session_state.df_clnt_info['Position'],
-                        "COMPANY" : st.session_state.df_clnt_info['Employer'],
-                        "LOCATION" : st.session_state.df_clnt_info['Employer Address']
-                    }
-                response = invoke_lambda_function("amazon_titan_s", payload=payload)
-
-                if response['statusCode'] == 200:
-                    external_data_bucket = response['bucket']
-                    external_data_object = response['object_key']
-
-                    st.success("External Data Agent completed successfully!")
-                    cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
-                    
-                    st.session_state.df_entry_table[cu_pointer]['Proc2'] = 'Completed'
-                    st.session_state.df_entry_table[cu_pointer]['Proc2_Bucket'] = external_data_bucket
-                    st.session_state.df_entry_table[cu_pointer]['Proc2_Object'] = external_data_object
-
-                    csv_buffer = StringIO()
-                    st.session_state.df_entry_table.to_csv(csv_buffer, index=False)
-                    s3.put_object(Bucket=entry_bucket_name, Key=entry_object_key, Body=csv_buffer.getvalue())
-
-                    st.success("Transcribe Agent completed successfully!")
-                    # st.write(response['url_statements'])
-                else:
-                    st.error("Transcribe Agent failed to run.")
-        else:
-            st.info("This client has already been processed by the External Data Agent.")
 
 if __name__ == "__main__":
     main()
