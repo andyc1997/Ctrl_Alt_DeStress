@@ -27,11 +27,6 @@ def main():
         st.session_state.df_clnt_info = None
     if 'df_entry_table' not in st.session_state:
         st.session_state.df_entry_table = None
-    else:
-        response = s3.get_object(Bucket=entry_bucket_name, Key=entry_object_key)
-        csv_content = response['Body'].read().decode('utf-8')
-        st.session_state.df_entry_table = pd.read_csv(StringIO(csv_content))
-        print(st.session_state.df_entry_table)
 
     if st.button("Create New Case"):
         if client_id:
@@ -91,6 +86,7 @@ def main():
                     st.session_state.df_entry_table[cu_pointer]['Proc1_Bucket'] = streetview_bucket
                     st.session_state.df_entry_table[cu_pointer]['Proc1_Object'] = streetview_object
 
+                    print(type(st.session_state.df_entry_table))
                     print(st.session_state.df_entry_table)
 
                     csv_buffer = StringIO()
@@ -135,9 +131,6 @@ def main():
                     st.session_state.df_entry_table[cu_pointer]['Proc2'] = 'Completed'
                     st.session_state.df_entry_table[cu_pointer]['Proc2_Bucket'] = external_data_bucket
                     st.session_state.df_entry_table[cu_pointer]['Proc2_Object'] = external_data_object
-
-                    print(type(st.session_state.df_entry_table))
-                    print(st.session_state.df_entry_table)
 
                     csv_buffer = StringIO()
                     st.session_state.df_entry_table.to_csv(csv_buffer, index=False)
