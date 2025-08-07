@@ -28,14 +28,11 @@ def main():
     if 'df_entry_table' not in st.session_state:
         st.session_state.df_entry_table = None
     else:
-         # Read updated master table
         response = s3.get_object(Bucket=entry_bucket_name, Key=entry_object_key)
         csv_content = response['Body'].read().decode('utf-8')
         st.session_state.df_entry_table = pd.read_csv(StringIO(csv_content))
         print(st.session_state.df_entry_table)
-    if 'run_streetview' not in st.session_state:
-        st.session_state.run_streetview = False
-    
+
     if st.button("Create New Case"):
         if client_id:
             is_new_case, client_entry = create_client_entry(str(client_id))  
@@ -94,11 +91,13 @@ def main():
                     st.session_state.df_entry_table[cu_pointer]['Proc1_Bucket'] = streetview_bucket
                     st.session_state.df_entry_table[cu_pointer]['Proc1_Object'] = streetview_object
 
+                    print(st.session_state.df_entry_table)
+
                     csv_buffer = StringIO()
                     st.session_state.df_entry_table.to_csv(csv_buffer, index=False)
                     s3.put_object(Bucket=entry_bucket_name, Key=entry_object_key, Body=csv_buffer.getvalue())
-                    response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
                     
+                    response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
                     image_bytes = response['Body'].read()
                     st.image(image_bytes)
 
@@ -136,6 +135,8 @@ def main():
                     st.session_state.df_entry_table[cu_pointer]['Proc2'] = 'Completed'
                     st.session_state.df_entry_table[cu_pointer]['Proc2_Bucket'] = external_data_bucket
                     st.session_state.df_entry_table[cu_pointer]['Proc2_Object'] = external_data_object
+
+                    print(st.session_state.df_entry_table)
 
                     csv_buffer = StringIO()
                     st.session_state.df_entry_table.to_csv(csv_buffer, index=False)
