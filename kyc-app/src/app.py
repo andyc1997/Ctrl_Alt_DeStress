@@ -12,6 +12,8 @@ def main():
 
     # Get client ID from user input
     client_id = st.text_input("Enter Client ID:")
+    st.session_state['client_entry'] = {}
+    st.session_state['df_clnt_info'] = {}
     
     if st.button("Create New Case"):
         if client_id:
@@ -22,6 +24,7 @@ def main():
                 st.error(f"New case for client '{client_id}' already exists or could not be created.")
         else:
             st.error("Please enter a valid Client ID.")
+        st.session_state['client_entry'] = client_entry
     
     # Check if client entry exists 
     if st.button("Check Client ID"):
@@ -33,6 +36,8 @@ def main():
                 st.success(f"The client for '{client_id}' exists.")
         else:
             st.error("Please enter a valid Client ID.")
+        st.session_state['client_entry'] = client_entry
+        st.dataframe(client_entry)
     
     if st.button("Run Data Processing"):
         if client_id:
@@ -49,13 +54,14 @@ def main():
                 csv_content = response['Body'].read().decode('utf-8')
                 df = pd.read_csv(StringIO(csv_content), skiprows=10)
                 df_clnt_info = df[df['CU Number'].astype(str) == str(client_id)]
+            st.session_state['df_clnt_info'] = df_clnt_info
             st.dataframe(df_clnt_info)
                 
         else:
             st.error("This client ID does not exist. Please create a new case first.")
         
     if st.button("Run StreetView Agent"):
-        if client_entry['Proc1'] is None:
+        if client_entry['Proc1'].isnull():
             with st.spinner("Running AI agents..."):
                 payload = {'CLNT_NBR': df_clnt_info['CU Number'], 
                            'ADDRESS': df_clnt_info['Employer Address']}
@@ -65,12 +71,13 @@ def main():
                     streetview_bucket = response['bucket']
                     streetview_object = response['image_name']
 
-                    st.success("Data Processing Agent completed successfully!")
+                    st.success("StreetView Agent completed successfully!")
                     client_entry['Proc1'] = 'Completed'
                     client_entry['Proc1_Bucket'] = streetview_bucket
                     client_entry['Proc1_Object'] = streetview_object
                 else:
                     st.error("StreetView Agent failed to run.")
+            
         else:
             st.error("This client has already been processed by the StreetView Agent.")
 
