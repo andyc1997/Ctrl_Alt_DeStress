@@ -106,6 +106,7 @@ def main():
             st.info("This client has already been processed by the StreetView Agent.")
             st.image(image_bytes, width=400)    
 
+    # Run Webscraping agent
     if st.button("Run Webscraping Agent"):
         if pd.isna(st.session_state.client_entry['Proc2']):
             with st.spinner("Running AI agents..."):
@@ -122,17 +123,23 @@ def main():
                     external_data_bucket = response['bucket']
                     external_data_object = response['object_key']
 
+                    st.success("Webscraping Agent completed successfully!")
+
                     cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
-                    
                     st.session_state.df_entry_table.loc[cu_pointer, 'Proc2'] = 'Completed'
                     st.session_state.df_entry_table.loc[cu_pointer, 'Proc2_Bucket'] = external_data_bucket
                     st.session_state.df_entry_table.loc[cu_pointer, 'Proc2_Object'] = external_data_object
+                    s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
 
-                    csv_buffer = StringIO()
-                    st.session_state.df_entry_table.to_csv(csv_buffer, index=False)
-                    s3.put_object(Bucket=entry_bucket_name, Key=entry_object_key, Body=csv_buffer.getvalue())
+                    response = s3.get_object(Bucket=external_data_bucket, Key=external_data_object)
+                    json_bytes = response['Body'].read()
+                    st.download_button(
+                        label="Download Webscraping Data",
+                        data=json_bytes,
+                        file_name=external_data_object,
+                        mime='application/json'
+                    )
 
-                    st.success("Webscraping Agent completed successfully!")
                 else:
                     st.error("Webscraping Agent failed to run.")
         else:
@@ -149,10 +156,23 @@ def main():
                 upload_key = uploaded_file.name
 
                 # Upload to S3
-                s3.put_object(Bucket=upload_bucket, Key=upload_key, Body=file_bytes)
-                st.success(f"File '{uploaded_file.name}' uploaded to S3 bucket '{upload_bucket}'.")
-        
+                response = s3.put_object(Bucket=upload_bucket, Key=upload_key, Body=file_bytes)
+                if response == 200:
+                    s3.copy_object(
+                        Bucket='doc-output-external',
+                    )
 
+                st.success(f"File '{uploaded_file.name}' uploaded to S3 bucket '{upload_bucket}'.")
+
+                cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
+                st.session_state.df_entry_table.loc[cu_pointer, 'Proc3'] = 'Completed'
+                st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Bucket'] = external_data_bucket
+                st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Object'] = external_data_object
+                s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
+
+
+
+    
 
 if __name__ == "__main__":
     main()

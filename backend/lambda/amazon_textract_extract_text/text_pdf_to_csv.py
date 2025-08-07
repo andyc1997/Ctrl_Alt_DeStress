@@ -14,8 +14,14 @@ def lambda_handler(event, context):
     input_bucket = 'doc-input-external'  # Replace with your input bucket
     output_bucket = 'output-internal-cld'  # Replace with your output bucket
     document = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'])
+    # document = '/bank statement.png'
     raw_csv_key = f'output/raw_{document.split("/")[-1].split(".")[0]}.csv'
+    # raw_csv_key = f'output/raw_bank statement.csv'
     filtered_csv_key = f'output/filtered_{document.split("/")[-1].split(".")[0]}.csv'
+    # filtered_csv_key = f'output/filtered_bank statement.csv'
+    # ttt = s3.list_objects_v2(Bucket=input_bucket)
+    # for s3_file in ttt.keys():
+    #     print(s3_file)
 
     # Extract text using Textract OCR
     response = textract.detect_document_text(
@@ -42,28 +48,40 @@ def lambda_handler(event, context):
     )
 
     # Your custom Bedrock prompt
-    custom_prompt = """
-    You are a KYC document specialist. Given the following text, extract only the demographic and important information (e.g. balance, address, name, statement date, etc.) and return them as a concise list. Ignore account numbers, and other non-transaction details. Format the output as a list of strings.
-    text:
-    {text}
-    """
+    # custom_prompt = f"You are a KYC document specialist. Given the following text, extract only the demographic and important information (e.g. balance, address, name, statement date, etc.) and return them as a concise list. Ignore account numbers, and other non-transaction details. Format the output as a list of strings. text: {text}"
     # Prepare text for Bedrock
     text_input = "\n".join(data)
-    prompt = custom_prompt.format(text=text_input)
+    # prompt = custom_prompt.format(text=text_input)
 
     # Call Bedrock to analyze and filter
-    bedrock_response = bedrock.invoke_model(
-        modelId='amazon.nova-pro-v1:0',  # Nova Pro model ID
-        contentType='application/json',
-        accept='application/json',
-        body=json.dumps({
-            "prompt": prompt,
-            "max_new_tokens": 1000,  # Use max_new_tokens for Nova Pro
-            "temperature": 0.7,
-            "top_p": 0.9
+    # bedrock_response = bedrock.invoke_model(
+    #     modelId='amazon.nova-pro-v1:0',  # Nova Pro model ID
+    #     contentType='application/json',
+    #     accept='application/json',
+    #     body=json.dumps({
+    #         "mess": prompt,
+    #         "max_new_tokens": 1000,  # Use max_new_tokens for Nova Pro
+    #         "temperature": 0.7,
+    #         "top_p": 0.9
+    #     })
+    # )
+    body = json.dumps({
+            "inputText": f"You are a KYC document specialist. Given the following text, extract only the demographic and important information (e.g. balance, address, name, statement date, etc.) and return them as a concise list. Ignore account numbers, and other non-transaction details. Format the output as a list of strings. text: {text_input}", 
+            #f"Summarize this statement: '{prompt}'. Provide a concise summary.",
+            "textGenerationConfig": {
+                "maxTokenCount": 2000,
+                "temperature": 0.7,
+                "topP": 0.9
+               
+            }
         })
+    bedrock_response = bedrock.invoke_model(
+        body=body,
+        modelId='amazon.titan-text-express-v1',
+        accept='application/json',
+        contentType='application/json'
     )
-    filtered_data = json.loads(bedrock_response['body'].read())['text']
+    filtered_data = json.loads(bedrock_response['body'].read())['results'][0]['outputText'].strip()
     # Parse filtered data (assuming Bedrock returns a list of strings)
     try:
         filtered_lines = json.loads(filtered_data) if filtered_data.startswith('[') else filtered_data.split('\n')
@@ -87,7 +105,5 @@ def lambda_handler(event, context):
 
     return {
         'statusCode': 200,
-        'bucket': output_bucket,
-        'object_key': filtered_csv_key
-        #'body': json.dumps(f'Filtered CSV uploaded to s3://{output_bucket}/{filtered_csv_key}')
+        'body': json.dumps(f'Filtered CSV uploaded to s3://{output_bucket}/{filtered_csv_key}')
     }
