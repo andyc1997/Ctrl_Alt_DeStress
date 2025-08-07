@@ -14,11 +14,13 @@ Parameters:
     CLNT_NBR : string, a customer number
     CUSTOMER_NAME : string, customer name
     OCCUPATION : string, customer's occupation
+    COMPANY : string, customer's company name
     LOCATION : string, customer's company location
     *sample input : {
                             "CLNT_NBR" : "123456704",
                             "CUSTOMER_NAME" : "Jamie Dimon",
                             "OCCUPATION" : "CEO",
+                            "COMPANY" : "JPMorgan Chase & Co.",
                             "LOCATION" : "270 Park Avenue,. New York City. ,. United States"
                          }
 
@@ -30,7 +32,7 @@ Returns:
     bucket : string, bucket_name
     s3_key : .json, a .json of scraped content
 '''
-
+import os
 from botocore.exceptions import ClientError
 from bs4 import BeautifulSoup
 import json
@@ -262,7 +264,7 @@ def lambda_handler(event, context):
         if not check_s3_access(s3_client, bucket_name):
             return {
                 'statusCode': 500,
-                'body': json.dumps({f"Cannot access S3 bucket {bucket_name}")
+                'body': json.dumps(f"Cannot access S3 bucket {bucket_name}")
             }
 
         # Get customer number from event json input
@@ -270,6 +272,7 @@ def lambda_handler(event, context):
         customer_name = str(event['CUSTOMER_NAME']).strip()
         occupation = str(event['OCCUPATION']).strip()
         location = str(event['LOCATION']).strip()
+        employer = str(event['COMPANY']).strip()
 
         # Extract customer data from event
         # response = s3.get_object(Bucket=add_src_bucket_name, Key=src_file)
@@ -392,7 +395,7 @@ def lambda_handler(event, context):
             'statusCode': 200,
             'body': json.dumps('Finished Searching'),
             'customer_name': customer_name,
-            'url_statements': url_statements,google-search-credentials
+            'url_statements': url_statements,
             'bucket': bucket_name,
             's3_key': s3_key
         }
@@ -403,5 +406,3 @@ def lambda_handler(event, context):
             'statusCode': 500,
             'body': json.dumps("Error: Internal server error")
         }
-
-
