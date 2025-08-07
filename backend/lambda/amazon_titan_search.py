@@ -1,9 +1,10 @@
 '''
 Environment Variables / Parameters:
-    ADD_SRC_S3_BUCKET : string, S3 bucket for database of customer data
-    GM_API_KEY : string, Personal Google Geocoding API
-    IMAGE_S3_BUCKET : string, S3 bucket for storing the street view image
-    SRC_FILE_NAME : string, S3 bucket for file name of customer data ADD_SRC_S3_BUCKET
+    # ADD_SRC_S3_BUCKET : string, S3 bucket for database of customer data
+    FUNC_S3_BUCKET : string, S3 bucket for storing the scraping result
+    GOOGLE_API_KEY : string, Personal Google Geocoding API
+    GOOGLE_CSE_ID : string, Personal Google CSE ID
+    # SRC_FILE_NAME : string, S3 bucket for file name of customer data ADD_SRC_S3_BUCKET
 
 Parameters:
     event : dict, input data from the event
@@ -402,4 +403,5 @@ def lambda_handler(event, context):
             'statusCode': 500,
             'body': json.dumps("Error: Internal server error")
         }
+
 
