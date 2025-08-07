@@ -14,6 +14,12 @@ Parameters:
     CUSTOMER_NAME : string, customer name
     OCCUPATION : string, customer's occupation
     LOCATION : string, customer's company location
+    *sample input : {
+                            "CLNT_NBR" : "123456704",
+                            "CUSTOMER_NAME" : "Jamie Dimon",
+                            "OCCUPATION" : "CEO",
+                            "LOCATION" : "270 Park Avenue,. New York City. ,. United States"
+                         }
 
 Returns:
     statusCode : integer, status code
@@ -396,3 +402,4 @@ def lambda_handler(event, context):
             'statusCode': 500,
             'body': json.dumps("Error: Internal server error")
         }
+
