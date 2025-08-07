@@ -5,7 +5,11 @@ Environment Variables / Parameters:
     IMAGE_S3_BUCKET : string, S3 bucket for storing the street view image
     # SRC_FILE_NAME : string, S3 bucket for file name of customer data ADD_SRC_S3_BUCKET
 
-Event Json Parameters:
+Parameters:
+    event : dict, input data from the event
+    context : dict, context information about the Lambda function execution environment
+    
+    Paramters for event json:
     CLNT_NBR : string, a customer number
     ADDRRESS : string, customer's company address
     *sample json input : {
