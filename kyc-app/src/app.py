@@ -12,8 +12,13 @@ def main():
 
     # Get client ID from user input
     client_id = st.text_input("Enter Client ID:")
-    st.session_state.client_entry = None
-    st.session_state.df_clnt_info = None
+    s3 = boto3.client('s3')
+
+    # Initialize session state variables
+    if 'client_entry' not in st.session_state:
+        st.session_state.client_entry = None
+    if 'df_clnt_info' not in st.session_state:
+        st.session_state.df_clnt_info = None
     
     if st.button("Create New Case"):
         if client_id:
@@ -24,7 +29,7 @@ def main():
                 st.error(f"New case for client '{client_id}' already exists or could not be created.")
         else:
             st.error("Please enter a valid Client ID.")
-        st.session_state.client_entry = client_entry
+        st.session_state.client_entry = client_entry.iloc[0].to_dict()
     
     # Check if client entry exists 
     if st.button("Check Client ID"):
@@ -36,7 +41,7 @@ def main():
                 st.success(f"The client for '{client_id}' exists.")
         else:
             st.error("Please enter a valid Client ID.")
-        st.session_state.client_entry. = client_entry
+        st.session_state.client_entry = client_entry.iloc[0].to_dict()
         st.dataframe(client_entry)
     
     if st.button("Run Data Processing"):
@@ -46,25 +51,21 @@ def main():
                 internal_data_bucket = "internaldataprocess"
                 internal_data_object = "real_cu_list.csv"
 
-                # Initialize S3 client
-                s3 = boto3.client('s3')
-
                 # Download CSV from S3
                 response = s3.get_object(Bucket=internal_data_bucket, Key=internal_data_object)
                 csv_content = response['Body'].read().decode('utf-8')
                 df = pd.read_csv(StringIO(csv_content), skiprows=10)
                 df_clnt_info = df[df['CU Number'].astype(str) == str(client_id)]
-            st.session_state.df_clnt_info = df_clnt_info
-            st.dataframe(df_clnt_info)
-                
+            st.session_state.df_clnt_info = df_clnt_info.iloc[0].to_dict()
+            st.dataframe(df_clnt_info)                
         else:
             st.error("This client ID does not exist. Please create a new case first.")
-    print('Session_state:\n', st.session_state)
+
     if st.button("Run StreetView Agent"):
-        if client_entry['Proc1'].isnull():
+        if pd.isna(st.session_state.client_entry['Proc1']):
             with st.spinner("Running AI agents..."):
-                payload = {'CLNT_NBR': df_clnt_info['CU Number'], 
-                           'ADDRESS': df_clnt_info['Employer Address']}
+                payload = {'CLNT_NBR': st.session_state.df_clnt_info['CU Number'], 
+                           'ADDRESS': st.session_state.df_clnt_info['Employer Address']}
                 response = invoke_lambda_function("street_view", payload=payload)
 
                 if response['statusCode'] == 200:
@@ -72,12 +73,15 @@ def main():
                     streetview_object = response['image_name']
 
                     st.success("StreetView Agent completed successfully!")
-                    client_entry['Proc1'] = 'Completed'
-                    client_entry['Proc1_Bucket'] = streetview_bucket
-                    client_entry['Proc1_Object'] = streetview_object
+                    st.session_state.client_entry['Proc1'] = 'Completed'
+                    st.session_state.client_entry['Proc1_Bucket'] = streetview_bucket
+                    st.session_state.client_entry['Proc1_Object'] = streetview_object
+
+                    response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
+                    image_bytes = response['Body'].read()
+                    st.image(image_bytes)
                 else:
                     st.error("StreetView Agent failed to run.")
-            
         else:
             st.error("This client has already been processed by the StreetView Agent.")
 
