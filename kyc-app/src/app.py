@@ -74,7 +74,9 @@ def main():
     if st.button("Run Webscraping Agent"):
         if client_entry['Proc3'] is None:
             with st.spinner("Running AI agents..."):
-                payload = {'CLNT_NBR': client_id, 'Proc1_Bucket': client_entry['Proc1_Bucket'], 'Proc1_Object': client_entry['Proc1_Object']}
+                payload = {'CLNT_NBR': client_id, 
+                           'Proc1_Bucket': client_entry['Proc1_Bucket'], 'Proc1_Object': client_entry['Proc1_Object'],
+                           'Proc2_Bucket': client_entry['Proc2_Bucket'], 'Proc2_Object': client_entry['Proc2_Object']}
                 response = invoke_lambda_function("ExternalDataAgent", payload=payload)
 
                 if response['statusCode'] == 200:
