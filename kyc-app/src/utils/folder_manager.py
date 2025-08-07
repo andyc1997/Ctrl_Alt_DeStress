@@ -12,8 +12,8 @@ entry_schema = {'CLNT_NBR': None,
                 'Proc4': None, 'Proc4_Bucket': None, 'Proc4_Object': None,
                 'Score': None}
 
-def get_client_entry(df: pd.DataFrame, clnt_nbr: str) -> pd.DataFrame:
-    return df[df['CLNT_NBR'].astype(str) == clnt_nbr]
+def get_client_entry(df: pd.DataFrame, clnt_nbr: str, column: str='CLNT_NBR') -> pd.DataFrame:
+    return df[df[column].astype(str) == clnt_nbr]
 
 # Function to create a new client entry
 def create_client_entry(clnt_nbr: str, bucket_name: str, object_key: str) -> tuple:
