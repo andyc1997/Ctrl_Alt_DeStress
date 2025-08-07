@@ -27,6 +27,12 @@ def main():
         st.session_state.df_clnt_info = None
     if 'df_entry_table' not in st.session_state:
         st.session_state.df_entry_table = None
+    else:
+         # Read updated master table
+        response = s3.get_object(Bucket=entry_bucket_name, Key=entry_object_key)
+        csv_content = response['Body'].read().decode('utf-8')
+        st.session_state.df_entry_table = pd.read_csv(StringIO(csv_content))
+        print(st.session_state.df_entry_table)
     if 'run_streetview' not in st.session_state:
         st.session_state.run_streetview = False
     
@@ -69,11 +75,6 @@ def main():
             st.dataframe(df_clnt_info)                
         else:
             st.info("This client ID does not exist. Please create a new case first.")
-        
-    # Read updated master table
-    response = s3.get_object(Bucket=entry_bucket_name, Key=entry_object_key)
-    csv_content = response['Body'].read().decode('utf-8')
-    st.session_state.df_entry_table = pd.read_csv(StringIO(csv_content))
 
     if st.button("Run StreetView Agent"):
         if pd.isna(st.session_state.client_entry['Proc1']):
@@ -97,6 +98,7 @@ def main():
                     st.session_state.df_entry_table.to_csv(csv_buffer, index=False)
                     s3.put_object(Bucket=entry_bucket_name, Key=entry_object_key, Body=csv_buffer.getvalue())
                     response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
+                    
                     image_bytes = response['Body'].read()
                     st.image(image_bytes)
 
