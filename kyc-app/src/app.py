@@ -119,10 +119,6 @@ def main():
             st.image(image_bytes, width=400)    
 
     if st.button("Run Webscraping Agent"):
-        # response = s3.get_object(Bucket=entry_bucket_name, Key=entry_object_key)
-        # csv_content = response['Body'].read().decode('utf-8')
-        # st.session_state.df_entry_table = pd.read_csv(StringIO(csv_content))
-
         if pd.isna(st.session_state.client_entry['Proc2']):
             with st.spinner("Running AI agents..."):
                 payload = {
@@ -132,13 +128,12 @@ def main():
                         "COMPANY" : st.session_state.df_clnt_info['Employer'],
                         "LOCATION" : st.session_state.df_clnt_info['Employer Address']
                     }
-                response = invoke_lambda_function("amazon_titan_s", payload=payload)
+                response = invoke_lambda_function("externaldataprocesscode", payload=payload)
 
                 if response['statusCode'] == 200:
                     external_data_bucket = response['bucket']
                     external_data_object = response['object_key']
 
-                    st.success("External Data Agent completed successfully!")
                     cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
                     
                     st.session_state.df_entry_table.loc[cu_pointer, 'Proc2'] = 'Completed'
@@ -156,7 +151,39 @@ def main():
         else:
             st.info("This client has already been processed by the External Data Agent.")
 
+    if st.button("Run Transcribe Agent"):     
+        if pd.isna(st.session_state.client_entry['Proc3']):
+            with st.spinner("Running AI agents..."):
+                payload = {
+                        "CLNT_NBR" : st.session_state.df_clnt_info['CU Number'],
+                        "CUSTOMER_NAME" : st.session_state.df_clnt_info['Name'],
+                        "OCCUPATION" : st.session_state.df_clnt_info['Position'],
+                        "COMPANY" : st.session_state.df_clnt_info['Employer'],
+                        "LOCATION" : st.session_state.df_clnt_info['Employer Address']
+                    }
+                response = invoke_lambda_function("amazon_titan_s", payload=payload)
 
+                if response['statusCode'] == 200:
+                    external_data_bucket = response['bucket']
+                    external_data_object = response['object_key']
+
+                    st.success("External Data Agent completed successfully!")
+                    cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
+                    
+                    st.session_state.df_entry_table[cu_pointer]['Proc2'] = 'Completed'
+                    st.session_state.df_entry_table[cu_pointer]['Proc2_Bucket'] = external_data_bucket
+                    st.session_state.df_entry_table[cu_pointer]['Proc2_Object'] = external_data_object
+
+                    csv_buffer = StringIO()
+                    st.session_state.df_entry_table.to_csv(csv_buffer, index=False)
+                    s3.put_object(Bucket=entry_bucket_name, Key=entry_object_key, Body=csv_buffer.getvalue())
+
+                    st.success("Transcribe Agent completed successfully!")
+                    # st.write(response['url_statements'])
+                else:
+                    st.error("Transcribe Agent failed to run.")
+        else:
+            st.info("This client has already been processed by the External Data Agent.")
 
 if __name__ == "__main__":
     main()
