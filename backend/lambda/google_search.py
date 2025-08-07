@@ -1,3 +1,31 @@
+'''
+Environment Variables / Parameters:
+    ADD_SRC_S3_BUCKET : string, S3 bucket for database of customer data
+    GM_API_KEY : string, Personal Google Geocoding API
+    IMAGE_S3_BUCKET : string, S3 bucket for storing the street view image
+    SRC_FILE_NAME : string, S3 bucket for file name of customer data ADD_SRC_S3_BUCKET
+
+Parameters:
+    event : dict, input data from the event
+    context : dict, context information about the Lambda function execution environment
+    
+    Paramters for event json:
+    CLNT_NBR : string, a customer number
+    CUSTOMER_NAME : string, customer name
+    OCCUPATION : string, customer's occupation
+    LOCATION : string, customer's company location
+
+Returns:
+    statusCode : integer, status code
+    body : string, result statement
+    customer_name : string, customer_name,
+    url_statements : string, url_statements,google-search-credentials
+    bucket : string, bucket_name
+    s3_key : .json, a .json of scraped content
+'''
+
+from botocore.exceptions import ClientError
+from bs4 import BeautifulSoup
 import json
 import boto3
 import logging
@@ -5,8 +33,6 @@ import time
 import re
 import urllib.parse
 import requests
-from bs4 import BeautifulSoup
-from botocore.exceptions import ClientError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -45,10 +71,10 @@ def check_s3_access(s3_client, bucket_name):
         logger.error(f"Failed to access S3 bucket {bucket_name}: {e.response['Error']['Code']} - {e.response['Error']['Message']}")
         return False
 
-def get_google_search_results(customer_name, employer, location, industry, api_key, cse_id, max_results=10):
+def get_google_search_results(customer_name, employer, location, occupation, api_key, cse_id, max_results=10):
     """Fetch up to max_results Google Search results with retry logic and fallback queries."""
     base_query = f"{customer_name} {employer}"
-    secondary_query = f"{location} {industry}"
+    secondary_query = f"{location} {occupation}"
     fallback_query = customer_name
     queries = [base_query, f"{base_query} {secondary_query}", fallback_query]
     results = []
@@ -110,12 +136,12 @@ def validate_credentials(api_key, cse_id):
         logger.error(f"Failed to validate Google API credentials: {str(e)}")
         return False
 
-def select_top_urls_with_bedrock(search_results, customer_name, employer, location, industry):
+def select_top_urls_with_bedrock(search_results, customer_name, employer, location, occupation):
     """Use Bedrock (Amazon Titan) to select top 5 URLs based on prioritization rules."""
     try:
         bedrock_client = boto3.client('bedrock-runtime', region_name='us-east-1')
         prompt = f"""
-You are a KYC analyst selecting the top 5 most relevant URLs for due diligence on {customer_name}, employed by {employer} in {location} ({industry} industry). 
+You are a KYC analyst selecting the top 5 most relevant URLs for due diligence on {customer_name}, employed by {employer} in {location} ({occupation} occupation). 
 Prioritize URLs in this order:
 1. Employer Website: Direct profiles or mentions on {employer}'s website.
 2. News Source: Reputable news outlets (e.g., Forbes, Reuters, NYTimes).
@@ -149,6 +175,7 @@ Example output:
         )
         result = json.loads(response['body'].read().decode('utf-8'))
         output_text = result['results'][0]['outputText']
+
         # Extract JSON from the output (Titan may wrap JSON in markdown or text)
         try:
             top_urls = json.loads(output_text)
@@ -216,22 +243,54 @@ def rule_based_url_selection(search_results, customer_name, employer):
 
 def lambda_handler(event, context):
     try:
-        # Extract customer data from event
-        customer_name = event.get('customer_name', '').strip()
-        employer = event.get('employer', '').strip()
-        location = event.get('location', '').strip()
-        industry = event.get('industry', '').strip()
-        
-        if not all([customer_name, employer, location, industry]):
+        # Initialize S3 client
+        s3_client = boto3.client('s3')
+
+        # Initialize bucket name
+        bucket_name = os.environ.get("FUNC_S3_BUCKET")
+        # add_src_bucket_name = os.environ.get("ADD_SRC_S3_BUCKET")
+        # src_file = os.environ.get("SRC_FILE_NAME")
+
+        # Check S3 access
+        if not check_s3_access(s3_client, bucket_name):
             return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'Missing required fields: customer_name, employer, location, industry'})
+                'statusCode': 500,
+                'body': json.dumps({f"Cannot access S3 bucket {bucket_name}")
             }
 
-        # URL-encode customer_name, employer, and industry for fallback
+        # Get customer number from event json input
+        cu = str(event['CLNT_NBR']).strip()
+        customer_name = str(event['CUSTOMER_NAME']).strip()
+        occupation = str(event['OCCUPATION']).strip()
+        location = str(event['LOCATION']).strip()
+
+        # Extract customer data from event
+        # response = s3.get_object(Bucket=add_src_bucket_name, Key=src_file)
+        # file_content = response['Body'].read().decode('utf-8')
+        # csv_reader = csv.reader(io.StringIO(file_content))
+        # for row in csv_reader:
+        #     if row[0] == cu:
+        #         location = str(row[13]).strip()
+        #         customer_name = str(row[1]).strip()
+        #         employer = str(row[4]).strip()
+                # industry changed to occupation / job position
+                # occupation = str(row[3]).strip() 
+                # break
+        # customer_name = event.get('customer_name', '').strip()
+        # employer = event.get('employer', '').strip()
+        # location = event.get('location', '').strip()
+        # occupation = event.get('occupation', '').strip()
+        
+        if not all([customer_name, employer, location, occupation]):
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'Missing required fields: customer_name, employer, location, occupation'})
+            }
+
+        # URL-encode customer_name, employer, and occupation for fallback
         encoded_customer_name = urllib.parse.quote(customer_name)
         encoded_employer = urllib.parse.quote(employer)
-        encoded_industry = urllib.parse.quote(industry)
+        encoded_occupation = urllib.parse.quote(occupation)
 
         # Fallback URLs
         fallback_url_statements = [
@@ -258,24 +317,20 @@ def lambda_handler(event, context):
             }
         ]
 
-        # Initialize S3 client
-        s3_client = boto3.client('s3')
-        bucket_name = 'externaldataprocess'
-
-        # Check S3 access
-        if not check_s3_access(s3_client, bucket_name):
-            return {
-                'statusCode': 500,
-                'body': json.dumps({'error': f'Cannot access S3 bucket {bucket_name}'})
-            }
+        # bucket_name = 'externaldataprocess'
 
         # Fetch Google API credentials
         secrets_client = boto3.client('secretsmanager')
         try:
-            secret = secrets_client.get_secret_value(SecretId='google-search-credentials')
-            credentials = json.loads(secret['SecretString'])
-            api_key = credentials['api_key']
-            cse_id = credentials['cse_id']
+            # secret = secrets_client.get_secret_value(SecretId='google-search-credentials')
+            # credentials = json.loads(secret['SecretString'])
+            # api_key = credentials['api_key']
+            # cse_id = credentials['cse_id']
+
+            # Extract Google API and CSE keys from evironment variables
+            api_key = os.environ.get("GOOGLE_API_KEY")
+            cse_id = os.environ.get("GOOGLE_CSE_ID")
+            
         except ClientError as e:
             logger.error(f"Failed to retrieve Google API credentials: {e.response['Error']['Code']} - {e.response['Error']['Message']}")
             url_statements = fallback_url_statements
@@ -286,13 +341,13 @@ def lambda_handler(event, context):
                 url_statements = fallback_url_statements
             else:
                 # Step 1: Fetch Google Search results
-                search_results = get_google_search_results(customer_name, employer, location, industry, api_key, cse_id)
+                search_results = get_google_search_results(customer_name, employer, location, occupation, api_key, cse_id)
                 if not search_results:
                     logger.warning("Using fallback URLs due to empty Google Search results")
                     url_statements = fallback_url_statements
                 else:
                     # Step 2: Select top 5 URLs with Bedrock
-                    url_statements = select_top_urls_with_bedrock(search_results, customer_name, employer, location, industry)
+                    url_statements = select_top_urls_with_bedrock(search_results, customer_name, employer, location, occupation)
                     if not url_statements:
                         logger.warning("Bedrock returned no URLs, using rule-based selection")
                         url_statements = rule_based_url_selection(search_results, customer_name, employer)
@@ -315,7 +370,7 @@ def lambda_handler(event, context):
                     'customer_name': customer_name,
                     'employer': employer,
                     'location': location,
-                    'industry': industry,
+                    'occupation': occupation,
                     'url_statements': url_statements
                 })
             )
@@ -323,21 +378,21 @@ def lambda_handler(event, context):
             logger.error(f"Failed to write to S3: {e.response['Error']['Code']} - {e.response['Error']['Message']}")
             return {
                 'statusCode': 500,
-                'body': json.dumps({'error': f'Failed to write to S3 bucket {bucket_name}'})
+                'body': json.dumps(f"Failed to write to S3 bucket {bucket_name}")
             }
 
         return {
             'statusCode': 200,
-            'body': json.dumps({
-                'customer_name': customer_name,
-                'url_statements': url_statements,
-                's3_key': s3_key
-            })
+            'body': json.dumps('Finished Searching'),
+            'customer_name': customer_name,
+            'url_statements': url_statements,google-search-credentials
+            'bucket': bucket_name,
+            's3_key': s3_key
         }
 
     except Exception as e:
         logger.error(f"Error in website suggestion: {str(e)}")
         return {
             'statusCode': 500,
-            'body': json.dumps({'error': 'Internal server error'})
+            'body': json.dumps("Error: Internal server error")
         }
