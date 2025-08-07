@@ -71,8 +71,8 @@ def main():
         else:
             st.info("This client ID does not exist. Please create a new case first.")
         
-    if pd.isna(st.session_state.client_entry['Proc1']):
-        if st.session_state.run_streetview:
+    if st.button("Run StreetView Agent"):
+        if pd.isna(st.session_state.client_entry['Proc1']):
             with st.spinner("Running AI agents..."):
                 payload = {'CLNT_NBR': st.session_state.df_clnt_info['CU Number'], 
                            'ADDRESS': st.session_state.df_clnt_info['Employer Address']}
@@ -98,14 +98,13 @@ def main():
 
                 else:
                     st.info("StreetView Agent failed to run. Please try again later.")
-    else:
-        st.checkbox("Run StreetView Agent", value=True, key="run_streetview")
-        streetview_bucket = st.session_state.client_entry['Proc1_Bucket']
-        streetview_object = st.session_state.client_entry['Proc1_Object']
+        else:
+            streetview_bucket = st.session_state.client_entry['Proc1_Bucket']
+            streetview_object = st.session_state.client_entry['Proc1_Object']
 
-        response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
-        image_bytes = response['Body'].read()
-        st.image(image_bytes, width=400)
+            response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
+            image_bytes = response['Body'].read()
+            st.image(image_bytes, width=400)
 
         st.info("This client has already been processed by the StreetView Agent.")
 
