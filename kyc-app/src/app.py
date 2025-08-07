@@ -39,7 +39,7 @@ def main():
             with st.spinner("Running Data Processing..."):
                 payload = {'CLNT_NBR': client_id}
                 internal_data_bucket = "internaldataprocess"
-                internal_data_object = "real_cu_list1.csv"
+                internal_data_object = "real_cu_list.csv"
 
                 # Initialize S3 client
                 s3 = boto3.client('s3')
@@ -47,17 +47,18 @@ def main():
                 # Download CSV from S3
                 response = s3.get_object(Bucket=internal_data_bucket, Key=internal_data_object)
                 csv_content = response['Body'].read().decode('utf-8')
-                df = pd.read_csv(StringIO(csv_content), skiprows=10, header=True)
-                df_clnt_info = df[df['CLNT_NBR'] == str(client_id)]
+                df = pd.read_csv(StringIO(csv_content), skiprows=10)
+                df_clnt_info = df[df['CU Number'].astype(str) == str(client_id)]
             st.dataframe(df_clnt_info)
                 
         else:
             st.error("This client ID does not exist. Please create a new case first.")
         
     if st.button("Run StreetView Agent"):
-        if client_entry['Proc2'] is None:
+        if client_entry['Proc1'] is None:
             with st.spinner("Running AI agents..."):
-                payload = {'CLNT_NBR': client_id, 'Proc1_Bucket': client_entry['Proc1_Bucket'], 'Proc1_Object': client_entry['Proc1_Object']}
+                payload = {'CLNT_NBR': df_clnt_info['CU Number'], 
+                           'ADDRESS': df_clnt_info['Employer Address']}
                 response = invoke_lambda_function("street_view", payload=payload)
 
                 if response['statusCode'] == 200:
@@ -65,9 +66,9 @@ def main():
                     streetview_object = response['image_name']
 
                     st.success("Data Processing Agent completed successfully!")
-                    client_entry['Proc2'] = 'Completed'
-                    client_entry['Proc2_Bucket'] = streetview_bucket
-                    client_entry['Proc2_Object'] = streetview_object
+                    client_entry['Proc1'] = 'Completed'
+                    client_entry['Proc1_Bucket'] = streetview_bucket
+                    client_entry['Proc1_Object'] = streetview_object
                 else:
                     st.error("StreetView Agent failed to run.")
         else:
