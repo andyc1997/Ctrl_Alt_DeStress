@@ -1,7 +1,7 @@
 import boto3
 import pandas as pd
 
-from invoke_s3 import s3_read_csv, s3_write_csv
+from utils.invoke_s3 import s3_read_csv, s3_write_csv
 from io import StringIO
 
 # Entry schema

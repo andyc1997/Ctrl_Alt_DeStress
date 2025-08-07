@@ -122,7 +122,7 @@ def main():
 
                 if response['statusCode'] == 200:
                     external_data_bucket = response['bucket']
-                    external_data_object = response['object_key']
+                    external_data_object = response['s3_key']
 
                     st.success("Webscraping Agent completed successfully!")
 
@@ -158,20 +158,21 @@ def main():
                 output_bucket = "output-internal-cld/output"
 
                 # Upload to S3
-                response = s3.put_object(Bucket=upload_bucket, Key=upload_key, Body=file_bytes)
+                s3.put_object(Bucket=upload_bucket, Key=upload_key, Body=file_bytes)
                 st.success(f"File '{uploaded_file.name}' uploaded to S3 bucket '{upload_bucket}'.")
 
                 # Give it some buffer time and only show download button if the file is processed
                 output_key = "filtered_" + uploaded_file.name.split('.')[0] + ".csv"
-                time.sleep(30)
-                exists = s3_file_exists(s3, output_bucket, output_key)
-                if exists:
-                    st.download_button(
-                        label="Download Extracted Data",
-                        data=s3_read_csv(s3, output_bucket, output_key),
-                        file_name=output_key,
-                        mime="text/csv"
-                    )
+                with st.spinner("Running AI agents..."):
+                    time.sleep(30)
+                    exists = s3_file_exists(s3, output_bucket, output_key)
+                    if exists:
+                        st.download_button(
+                            label=">> Download Extracted Data",
+                            data=s3_read_csv(s3, output_bucket, output_key),
+                            file_name=output_key,
+                            mime="text/csv"
+                        )
                 
                 # Anyway, Textract should always extract something, let write it to the entry table and wait for its completion
                 cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
