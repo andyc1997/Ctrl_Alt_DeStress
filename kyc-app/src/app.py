@@ -16,20 +16,20 @@ def main():
         if client_id:
             is_new_case, client_entry = create_client_entry(str(client_id))  
             if is_new_case:
-                st.success(f"Folder for client '{client_id}' created successfully!")
+                st.success(f"New case for client '{client_id}' created successfully!")
             else:
-                st.error(f"Folder for client '{client_id}' already exists or could not be created.")
+                st.error(f"New case for client '{client_id}' already exists or could not be created.")
         else:
             st.error("Please enter a valid Client ID.")
     
     # Check if client entry exists 
-    if st.button("Check Client Entry"):
+    if st.button("Check Client ID"):
         if client_id:
             is_new_case, client_entry = check_client_entry(str(client_id))
             if is_new_case:
-                st.error(f"Client entry for '{client_id}' does not exist.")
+                st.error(f"The client for '{client_id}' does not exist.")
             else:
-                st.success(f"Client entry for '{client_id}' exists.")
+                st.success(f"The client for '{client_id}' exists.")
         else:
             st.error("Please enter a valid Client ID.")
     
@@ -71,5 +71,23 @@ def main():
         else:
             st.error("This client has already been processed by the StreetView Agent.")
 
+    if st.button("Run Webscraping Agent"):
+        if client_entry['Proc3'] is None:
+            with st.spinner("Running AI agents..."):
+                payload = {'CLNT_NBR': client_id, 'Proc1_Bucket': client_entry['Proc1_Bucket'], 'Proc1_Object': client_entry['Proc1_Object']}
+                response = invoke_lambda_function("ExternalDataAgent", payload=payload)
+
+                if response['statusCode'] == 200:
+                    external_data_bucket = response['bucket']
+                    external_data_object = response['object_key']
+
+                    st.success("External Data Agent completed successfully!")
+                    client_entry['Proc3'] = 'Completed'
+                    client_entry['Proc3_Bucket'] = external_data_bucket
+                    client_entry['Proc3_Object'] = external_data_object
+                else:
+                    st.error("Webscraping Agent failed to run.")
+        else:
+            st.error("This client has already been processed by the External Data Agent.")
 if __name__ == "__main__":
     main()

@@ -3,7 +3,12 @@ import pandas as pd
 from io import StringIO
 
 # Entry schema
-entry_schema = {'CLNT_NBR': None, 'Proc1': None, 'Proc2': None, 'Proc3': None, 'Proc4': None, 'Score': None}
+entry_schema = {'CLNT_NBR': None, 
+                'Proc1': None, 'Proc1_Bucket': None, 'Proc1_Object': None,
+                'Proc2': None, 'Proc2_Bucket': None, 'Proc2_Object': None,
+                'Proc3': None, 'Proc3_Bucket': None, 'Proc3_Object': None,
+                'Proc4': None, 'Proc4_Bucket': None, 'Proc4_Object': None,
+                'Score': None}
 
 # S3 bucket and object details
 bucket_name = 'client-master-entry'
