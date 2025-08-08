@@ -73,6 +73,7 @@ def main():
 
     # Run Webscraping agent
     if st.button("Run Webscraping Agent"):
+        st.session_state.df_entry_table = s3_read_csv(s3, entry_bucket_name, entry_object_key)
         if pd.isna(st.session_state.client_entry['Proc2']):
             with st.spinner("Running AI agents..."):
                 payload = {
@@ -143,7 +144,7 @@ def main():
                     s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
                     
                     # display image
-                    response = s3.get_object(streetview_bucket, streetview_object)
+                    response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
                     image_bytes = response['Body'].read()
                     st.image(image_bytes)
                 else:
@@ -239,8 +240,9 @@ def main():
                     s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
                     
                     # display json
-                    response = s3_read_json(s3, transcribe_bucket, transcribe_object)
-                    st.success("Voice-to-Text Agent completed successfully! Message preview: " + response['body']['transcription'])
+                    response = s3.get_object(Bucket=transcribe_bucket, Key=transcribe_object)
+                    dict_from_json = json.load(response['Body'].read())
+                    st.success("Voice-to-Text Agent completed successfully! Message preview: " + dict_from_json['body']['transcription'])
                 else:
                     st.info("Voice-to-Text Agent failed to run. Please try again later.")
         else:
