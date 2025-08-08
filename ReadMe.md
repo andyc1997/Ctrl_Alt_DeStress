@@ -89,5 +89,5 @@ This system automates **KYC (Know Your Customer)** and **Source of Wealth (SOW)*
 
 ## 4. Key Features
 - **Parallel Processing:** Steps B4.1/B4.2 and B8.1/B8.2/B8.3 run simultaneously
-- **AI Integration:** Amazon Bedrock (Nova), Textract, Transcribe
+- **AI Integration:** Amazon Bedrock (Titan, Nova), Textract, Transcribe
 - **Audit Trail:** Call logs, automated emails, and document tracking
