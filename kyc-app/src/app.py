@@ -1,12 +1,13 @@
 import streamlit as st
 import pandas as pd
 import boto3
+import json
 import time 
 
 from io import StringIO
 from utils.folder_manager import create_client_entry, check_client_entry, get_client_entry
 from utils.invoke_lambda_function import invoke_lambda_function
-from utils.invoke_s3 import s3_read_csv, s3_write_csv, s3_file_exists
+from utils.invoke_s3 import s3_read_csv, s3_write_csv, s3_file_exists, s3_read_json
 
 def main():
     st.title("KYC Intelligent Agent Management")
@@ -68,45 +69,6 @@ def main():
         else:
             st.info("This client ID does not exist. Please create a new case first.")
 
-    # Run StreetView agent
-    if st.button("Run StreetView Agent"):
-        st.session_state.df_entry_table = s3_read_csv(s3, entry_bucket_name, entry_object_key)
-        if pd.isna(st.session_state.client_entry['Proc1']):
-            with st.spinner("Running AI agents..."):
-                payload = {
-                    'CLNT_NBR': st.session_state.df_clnt_info['CU Number'], 
-                    'ADDRESS': st.session_state.df_clnt_info['Employer Address']
-                }
-                response = invoke_lambda_function("street_view", payload=payload)
-                if response['statusCode'] == 200:
-                    # get response
-                    streetview_bucket = response['bucket']
-                    streetview_object = response['image_name']
-                    st.success("StreetView Agent completed successfully!")
-
-                    # update entry table 
-                    cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
-                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc1'] = 'Completed'
-                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc1_Bucket'] = streetview_bucket
-                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc1_Object'] = streetview_object
-                    s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
-                    
-                    # display image
-                    response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
-                    image_bytes = response['Body'].read()
-                    st.image(image_bytes)
-                else:
-                    st.info("StreetView Agent failed to run. Please try again later.")
-        else:
-            streetview_bucket = st.session_state.client_entry['Proc1_Bucket']
-            streetview_object = st.session_state.client_entry['Proc1_Object']
-
-            response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
-            image_bytes = response['Body'].read()
-
-            st.info("This client has already been processed by the StreetView Agent.")
-            st.image(image_bytes, width=400)    
-
     # Run Webscraping agent
     if st.button("Run Webscraping Agent"):
         if pd.isna(st.session_state.client_entry['Proc2']):
@@ -147,13 +109,52 @@ def main():
             external_data_bucket = st.session_state.client_entry['Proc2_Bucket']
             external_data_object = st.session_state.client_entry['Proc2_Object']
             st.info(f"This client has already been processed by the Webscraping Agent: Bucket={external_data_bucket} and Key={external_data_object}")
-            external_data = s3.get_object(Bucket=external_data_bucket, Key=external_data_object)
+            external_data = s3_read_json(s3, Bucket=external_data_bucket, Key=external_data_object)
             st.download_button(
                         label=">> Download Extracted Data",
-                        data=external_data,
+                        data=json.dumps(external_data),
                         file_name=external_data_object,
                         mime="application/json"
                     )
+
+    # Run StreetView agent
+    if st.button("Run StreetView Agent"):
+        st.session_state.df_entry_table = s3_read_csv(s3, entry_bucket_name, entry_object_key)
+        if pd.isna(st.session_state.client_entry['Proc1']):
+            with st.spinner("Running AI agents..."):
+                payload = {
+                    'CLNT_NBR': st.session_state.df_clnt_info['CU Number'], 
+                    'ADDRESS': st.session_state.df_clnt_info['Employer Address']
+                }
+                response = invoke_lambda_function("street_view", payload=payload)
+                if response['statusCode'] == 200:
+                    # get response
+                    streetview_bucket = response['bucket']
+                    streetview_object = response['image_name']
+                    st.success("StreetView Agent completed successfully!")
+
+                    # update entry table 
+                    cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc1'] = 'Completed'
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc1_Bucket'] = streetview_bucket
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc1_Object'] = streetview_object
+                    s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
+                    
+                    # display image
+                    response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
+                    image_bytes = response['Body'].read()
+                    st.image(image_bytes)
+                else:
+                    st.info("StreetView Agent failed to run. Please try again later.")
+        else:
+            streetview_bucket = st.session_state.client_entry['Proc1_Bucket']
+            streetview_object = st.session_state.client_entry['Proc1_Object']
+
+            response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
+            image_bytes = response['Body'].read()
+
+            st.info("This client has already been processed by the StreetView Agent.")
+            st.image(image_bytes, width=400)    
 
     if 'show_textract_uploader' not in st.session_state:
         st.session_state.show_textract_uploader = False
