@@ -146,7 +146,13 @@ def main():
         else:
             st.info("This client has already been processed by the External Data Agent.")
 
-    if st.button("Run Textract Agent"):     
+    if 'show_textract_uploader' not in st.session_state:
+        st.session_state.show_textract_uploader = False
+
+    if st.button("Run Textract Agent"):
+        st.session_state.show_textract_uploader = True
+
+    if st.session_state.show_textract_uploader:
         if pd.isna(st.session_state.client_entry['Proc3']):
             uploaded_file = st.file_uploader("Choose a file to upload")
             if uploaded_file is not None:
