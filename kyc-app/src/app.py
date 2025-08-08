@@ -29,7 +29,8 @@ def main():
         st.session_state.df_entry_table = None
     else: 
         st.session_state.df_entry_table = s3_read_csv(s3, entry_bucket_name, entry_object_key)
-        st.session_state.client_entry = get_client_entry(st.session_state.df_entry_table, str(client_id)).iloc[0].to_dict()
+        if not st.session_state.df_entry_table.empty:
+            st.session_state.client_entry = get_client_entry(st.session_state.df_entry_table, str(client_id)).iloc[0].to_dict()
 
     # Create New Case
     # if st.button("Create New Case"):
@@ -99,14 +100,14 @@ def main():
                     st.session_state.df_entry_table.loc[cu_pointer, 'Proc2_Object'] = external_data_object
                     s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
 
-                    response = s3.get_object(Bucket=external_data_bucket, Key=external_data_object)
-                    json_bytes = response['Body'].read()
-                    st.download_button(
-                        label="Download Webscraping Data",
-                        data=json_bytes,
-                        file_name=external_data_object,
-                        mime='application/json'
-                    )
+                    # response = s3.get_object(Bucket=external_data_bucket, Key=external_data_object)
+                    # json_bytes = response['Body'].read()
+                    # st.download_button(
+                    #     label="Download Webscraping Data",
+                    #     data=json_bytes,
+                    #     file_name=external_data_object,
+                    #     mime='application/json'
+                    # )
 
                 else:
                     st.error("Webscraping Agent failed to run.")
@@ -285,14 +286,16 @@ def main():
         external_data_bucket = st.session_state.client_entry['Proc2_Bucket']
         external_data_object = st.session_state.client_entry['Proc2_Object']
         external_data = s3_read_json(s3, external_data_bucket, external_data_object)
-        json_webscrape = json.load(external_data)
-        webscrape_txt = json.dumps(json_webscrape)
+        webscrape_txt = json.dumps(external_data)
 
         input_narratives = (df_clnt_info + webscrape_txt + json_textract + json_textract2 + transcribe_txt).strip(' ').replace('"', "'")
         print(input_narratives)
         with st.spinner("Running AI agents..."):
-                response = invoke_lambda_function("deepseek-json-bedrock ", payload={'INPUT_TEXT': input_narratives})
-                print(response)
+            response = invoke_lambda_function("deepseek-json-bedrock ", payload={'INPUT_TEXT': input_narratives})
+            df_consol = s3_read_csv(s3, 'sowreport', 'sow_data.csv')
+            
+
+
     
 
 if __name__ == "__main__":
