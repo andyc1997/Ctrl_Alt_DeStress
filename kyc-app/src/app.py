@@ -252,7 +252,7 @@ def main():
                     # display json
                     response = s3.get_object(Bucket=transcribe_bucket, Key=transcribe_object)
                     dict_from_json = json.load(response['Body'])
-                    st.success("Voice-to-Text Agent completed successfully! Message preview: " + dict_from_json)
+                    st.success("Voice-to-Text Agent completed successfully! Message preview: " + str(dict_from_json))
                 else:
                     st.info("Voice-to-Text Agent failed to run. Please try again later.")
         else:
@@ -261,7 +261,7 @@ def main():
 
             response = s3.get_object(Bucket=transcribe_bucket, Key=transcribe_object)
             dict_from_json = json.load(response['Body'])
-            st.success("Voice-to-Text Agent completed successfully! Message preview: " + dict_from_json)
+            st.success("Voice-to-Text Agent completed successfully! Message preview: " + str(dict_from_json))
 
 
     
