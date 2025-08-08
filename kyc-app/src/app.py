@@ -108,8 +108,8 @@ def main():
         else:
             external_data_bucket = st.session_state.client_entry['Proc2_Bucket']
             external_data_object = st.session_state.client_entry['Proc2_Object']
-            st.info(f"This client has already been processed by the Webscraping Agent: Bucket={external_data_bucket} and Key={external_data_object}")
-            external_data = s3_read_json(s3, Bucket=external_data_bucket, Key=external_data_object)
+            st.info(f"This client has already been processed by the Webscraping Agent.")
+            external_data = s3_read_json(s3, external_data_bucket, external_data_object)
             st.download_button(
                         label=">> Download Extracted Data",
                         data=json.dumps(external_data),
@@ -141,7 +141,7 @@ def main():
                     s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
                     
                     # display image
-                    response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
+                    response = s3.get_object(streetview_bucket, streetview_object)
                     image_bytes = response['Body'].read()
                     st.image(image_bytes)
                 else:
@@ -180,14 +180,14 @@ def main():
                 # Give it some buffer time and only show download button if the file is processed
                 output_key = "output/filtered_" + uploaded_file.name.split('.')[0] + ".csv"
                 output_fname = "filtered_" + uploaded_file.name.split('.')[0] + ".csv"
-
                 exists = False
+
                 with st.spinner("Running AI agents..."):
                     time.sleep(30)
                     exists = s3_file_exists(s3, output_bucket, output_key)
                 if exists:
                     st.download_button(
-                        label=">> Download Extracted Data",
+                        label="Download Extracted Data",
                         data=s3_read_csv(s3, output_bucket, output_key).to_csv(index=False),
                         file_name=output_fname,
                         mime="text/csv"
@@ -202,13 +202,57 @@ def main():
         else:
             output_bucket = st.session_state.client_entry['Proc3_Bucket']
             output_key = st.session_state.client_entry['Proc3_Object']
-            st.info(f"This client has already been processed by the Textract Agent: Bucket={output_bucket} and Key={output_key}")
+            st.info(f"This client has already been processed by the Textract Agent.")
             extracted_output = s3_read_csv(s3, output_bucket, output_key).to_csv(index=False)
             st.download_button(
-                        label=">> Download Extracted Data",
+                        label="Download Extracted Data",
                         data=extracted_output,
-                        file_name=output_fname,
+                        file_name=output_key.split('/')[-1],
                         mime="text/csv"
+                    )
+    # Run Transcribe agent
+    if st.button("Run Voice-to-Text Agent"):
+        audio_file = 'banker_conversation_vo.mp3' # audio file should be automatically generated from source system. For demo, we use a static file.
+        st.info(f"The following audio file is found and will be transcribed to text: {audio_file}")
+
+        if pd.isna(st.session_state.client_entry['Proc4']):
+            with st.spinner("Running AI agents..."):
+                response = invoke_lambda_function("rmcall", payload={'mp3': audio_file})
+                if response['statusCode'] == 200:
+                    # get response
+                    transcribe_bucket = response['bucket']
+                    transcribe_object = response['s3_key']
+                    st.success("Voice-to-text completed successfully!")
+
+                    # update entry table 
+                    cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc4'] = 'Completed'
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc4_Bucket'] = transcribe_bucket
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc4_Object'] = transcribe_object
+                    s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
+                    
+                    # display json
+                    response = s3.get_object(transcribe_bucket, transcribe_object)
+                    json_bytes = response['Body'].read()
+                    st.download_button(
+                        label="Download Voice-to-Text Data",
+                        data=json_bytes,
+                        file_name=external_data_object,
+                        mime='application/json'
+                    )
+                else:
+                    st.info("StreetView Agent failed to run. Please try again later.")
+        else:
+            transcribe_bucket = st.session_state.client_entry['Proc4_Bucket']
+            transcribe_object = st.session_state.client_entry['Proc4_Object']
+
+            response = s3.get_object(transcribe_bucket, transcribe_object)
+            json_bytes = response['Body'].read()
+            st.download_button(
+                        label="Download Voice-to-Text Data",
+                        data=json_bytes,
+                        file_name=external_data_object,
+                        mime='application/json'
                     )
 
     
