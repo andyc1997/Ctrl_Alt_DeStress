@@ -144,7 +144,16 @@ def main():
                 else:
                     st.error("Webscraping Agent failed to run.")
         else:
-            st.info("This client has already been processed by the External Data Agent.")
+            external_data_bucket = st.session_state.client_entry['Proc2_Bucket']
+            external_data_object = st.session_state.client_entry['Proc2_Object']
+            st.info(f"This client has already been processed by the Webscraping Agent: Bucket={external_data_bucket} and Key={external_data_object}")
+            external_data = s3.get_object(Bucket=external_data_bucket, Key=external_data_object)
+            st.download_button(
+                        label=">> Download Extracted Data",
+                        data=external_data,
+                        file_name=external_data_object,
+                        mime="application/json"
+                    )
 
     if 'show_textract_uploader' not in st.session_state:
         st.session_state.show_textract_uploader = False
@@ -170,16 +179,18 @@ def main():
                 # Give it some buffer time and only show download button if the file is processed
                 output_key = "output/filtered_" + uploaded_file.name.split('.')[0] + ".csv"
                 output_fname = "filtered_" + uploaded_file.name.split('.')[0] + ".csv"
+
+                exists = False
                 with st.spinner("Running AI agents..."):
                     time.sleep(30)
                     exists = s3_file_exists(s3, output_bucket, output_key)
-                    if exists:
-                        st.download_button(
-                            label=">> Download Extracted Data",
-                            data=s3_read_csv(s3, output_bucket, output_key),
-                            file_name=output_fname,
-                            mime="text/csv"
-                        )
+                if exists:
+                    st.download_button(
+                        label=">> Download Extracted Data",
+                        data=s3_read_csv(s3, output_bucket, output_key).to_csv(index=False),
+                        file_name=output_fname,
+                        mime="text/csv"
+                    )
                 
                 # Anyway, Textract should always extract something, let write it to the entry table and wait for its completion
                 cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
@@ -187,8 +198,17 @@ def main():
                 st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Bucket'] = output_bucket
                 st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Object'] = output_key
                 s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
-
-
+        else:
+            output_bucket = st.session_state.client_entry['Proc3_Bucket']
+            output_key = st.session_state.client_entry['Proc3_Object']
+            st.info(f"This client has already been processed by the Textract Agent: Bucket={output_bucket} and Key={output_key}")
+            extracted_output = s3_read_csv(s3, output_bucket, output_key).to_csv(index=False)
+            st.download_button(
+                        label=">> Download Extracted Data",
+                        data=extracted_output,
+                        file_name=output_fname,
+                        mime="text/csv"
+                    )
 
     
 
