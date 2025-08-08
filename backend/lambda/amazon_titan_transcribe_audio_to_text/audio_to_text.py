@@ -1,3 +1,13 @@
+'''
+Parameters:
+    event : dict, input data from the event
+    context : dict, context information about the Lambda function execution environment
+
+Returns:
+    statusCode : integer, status code
+    body : .json, text result transcribed from audio
+'''
+
 import boto3
 import time
 import json
