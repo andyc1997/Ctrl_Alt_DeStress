@@ -22,13 +22,14 @@ def main():
 
     # Initialize session state variables
     if 'client_entry' not in st.session_state:
-        st.session_state.client_entry = None
+        st.session_state.client_entry = None 
     if 'df_clnt_info' not in st.session_state:
         st.session_state.df_clnt_info = None
     if 'df_entry_table' not in st.session_state:
         st.session_state.df_entry_table = None
     else: 
         st.session_state.df_entry_table = s3_read_csv(s3, entry_bucket_name, entry_object_key)
+        st.session_state.client_entry = get_client_entry(st.session_state.df_entry_table, str(client_id), 'CU Number')
 
     # Create New Case
     # if st.button("Create New Case"):
@@ -49,7 +50,7 @@ def main():
             is_new_case, client_entry = check_client_entry(str(client_id), entry_bucket_name, entry_object_key)
             if is_new_case:
                 st.info(f"The client for '{client_id}' does not exist.")
-                _, client_entry = create_client_entry(str(client_id), entry_bucket_name, entry_object_key) 
+                _, st.session_state.client_entry = create_client_entry(str(client_id), entry_bucket_name, entry_object_key) 
                 st.success(f"New case for client '{client_id}' created successfully!")
             else:
                 st.success(f"The client for '{client_id}' exists.")
@@ -67,6 +68,7 @@ def main():
                 df = s3_read_csv(s3, internal_data_bucket, internal_data_object, skiprows=10)
                 df_clnt_info = get_client_entry(df, str(client_id), 'CU Number')
             st.session_state.df_clnt_info = df_clnt_info.iloc[0].to_dict()
+
             st.dataframe(df_clnt_info)                
         else:
             st.info("This client ID does not exist. Please create a new case first.")
@@ -189,19 +191,8 @@ def main():
 
                     # Give it some buffer time and only show download button if the file is processed
                     output_key = "output/filtered_" + uploaded_file.name.split('.')[0] + ".csv"
-                    output_fname = "filtered_" + uploaded_file.name.split('.')[0] + ".csv"
-                    exists = False
-
-                    with st.spinner("Running AI agents for document " + str(i)):
+                    with st.spinner("Running AI agents for document " + str(i+1)):
                         time.sleep(30)
-                        exists = s3_file_exists(s3, output_bucket, output_key)
-                    # if exists:
-                    #     st.download_button(
-                    #         label="Download Extracted Data",
-                    #         data=s3_read_csv(s3, output_bucket, output_key).to_csv(index=False),
-                    #         file_name=output_fname,
-                    #         mime="text/csv"
-                    #     )
                     
                     # Anyway, Textract should always extract something, let write it to the entry table and wait for its completion
                     cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
@@ -221,9 +212,6 @@ def main():
                 st.info("The following files have been processed: " + output_keys)
 
     # Run Transcribe agent
-    with st.empty():
-        time.sleep(1)
-
     if st.button("Run Voice-to-text Agent"):
         st.session_state.show_textract_uploader = False
         st.session_state.show_voice_to_text = True
@@ -263,7 +251,47 @@ def main():
             dict_from_json = json.load(response['Body'])
             st.success("Voice-to-Text Agent completed successfully! Message preview: " + str(dict_from_json))
 
+    if st.button("Run SOW Report"): 
+        st.session_state.df_entry_table = s3_read_csv(s3, entry_bucket_name, entry_object_key)
+        # textract csv ouputs
+        # bucket: output-internal-cld
+        # file name: filtered_Basic_Pay_stub_singledpage.csv
+        df_textract = s3_read_csv(s3, st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Bucket'], 
+                                  st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Object'].split(';')[1])
+        df_textract2 = s3_read_csv(s3, st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Bucket'], 
+                                   st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Object'].split(';')[2])
+        json_textract = df_textract.to_json()
+        json_textract2 = df_textract2.to_json()
 
+        # citi internal database csv
+        internal_data_bucket = "internaldataprocess"
+        internal_data_object = "real_cu_list.csv"
+        df = s3_read_csv(s3, internal_data_bucket, internal_data_object, skiprows=10)
+        df_clnt_info = get_client_entry(df, str(client_id), 'CU Number').to_json()
+
+        # transcribe json outputs
+        # bucket: rmcallprocess/output/
+        # file name: extracted_data_transcription-job-1754614054.json
+        transcribe_bucket = st.session_state.client_entry['Proc4_Bucket']
+        transcribe_object = st.session_state.client_entry['Proc4_Object']
+        response_transcribe = s3.get_object(Bucket=transcribe_bucket,  Key=transcribe_object)
+        json_transcribe = json.load(response_transcribe['Body'])
+        transcribe_txt = json.dumps(json_transcribe)
+
+        # webscrape json outputs
+        # bucket: externaldataprocess/suggestions/
+        # file name: Jamie Dimon_1754539676.json
+        external_data_bucket = st.session_state.client_entry['Proc2_Bucket']
+        external_data_object = st.session_state.client_entry['Proc2_Object']
+        external_data = s3_read_json(s3, external_data_bucket, external_data_object)
+        json_webscrape = json.load(external_data)
+        webscrape_txt = json.dumps(json_webscrape)
+
+        input_narratives = (df_clnt_info + webscrape_txt + json_textract + json_textract2 + transcribe_txt).strip(' ').replace('"', "'")
+        print(input_narratives)
+        with st.spinner("Running AI agents..."):
+                response = invoke_lambda_function("deepseek-json-bedrock ", payload={'INPUT_TEXT': input_narratives})
+                print(response)
     
 
 if __name__ == "__main__":
