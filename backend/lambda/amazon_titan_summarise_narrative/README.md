@@ -7,7 +7,6 @@ This function is to summarise all the processed data from Transcribe, Textract, 
    
 It is triggered by a button event in streamlit user-interface.  
 
-**Lambda Function URL**: <https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions/deepseek-json-bedrock?tab=code>
 
 **Parameters**:  
    * event : dict, input data from the event  
