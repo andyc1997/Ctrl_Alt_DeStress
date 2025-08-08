@@ -162,8 +162,12 @@ def main():
     if 'show_textract_uploader' not in st.session_state:
         st.session_state.show_textract_uploader = False
 
+    if 'show_voice_to_text' not in st.session_state:
+        st.session_state.show_voice_to_text = False
+
     if st.button("Run Textract Agent"):
         st.session_state.show_textract_uploader = True
+        st.session_state.show_voice_to_text = False
 
     if st.session_state.show_textract_uploader:
         st.session_state.df_entry_table = s3_read_csv(s3, entry_bucket_name, entry_object_key)
@@ -215,10 +219,13 @@ def main():
             st.info(f"This client has already been processed by the Textract Agent.")
             if not pd.isna(output_keys):
                 st.info("The following files have been processed: " + output_keys)
-            
 
     # Run Transcribe agent
-    if st.button("Run Voice-to-Text Agent"):
+    if st.button("Run Textract Agent"):
+        st.session_state.show_textract_uploader = False
+        st.session_state.show_voice_to_text = True
+
+    if st.session_state.show_voice_to_text:
         audio_file = 'banker_conversation_vo.mp3' # audio file should be automatically generated from source system. For demo, we use a static file.
         st.info(f"The following audio file is found and will be transcribed to text: {audio_file}")
         st.session_state.df_entry_table = s3_read_csv(s3, entry_bucket_name, entry_object_key)
@@ -241,7 +248,7 @@ def main():
                     
                     # display json
                     response = s3.get_object(Bucket=transcribe_bucket, Key=transcribe_object)
-                    dict_from_json = json.load(response['Body'].read())
+                    dict_from_json = json.load(response['Body'])
                     st.success("Voice-to-Text Agent completed successfully! Message preview: " + dict_from_json['body']['transcription'])
                 else:
                     st.info("Voice-to-Text Agent failed to run. Please try again later.")
@@ -250,7 +257,7 @@ def main():
             transcribe_object = st.session_state.client_entry['Proc4_Object']
 
             response = s3.get_object(Bucket=transcribe_bucket, Key=transcribe_object)
-            dict_from_json = json.load(response['Body'].read())
+            dict_from_json = json.load(response['Body'])
             st.success("Voice-to-Text Agent completed successfully! Message preview: " + dict_from_json['body']['transcription'])
 
 
