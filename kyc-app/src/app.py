@@ -315,17 +315,17 @@ def main():
                 zf.writestr("image.png", image_bytes)
             zip_buffer.seek(0)
 
+            if sow_report['statusCode'] == 200:
+                response = s3.get_object(Bucket="sowreport", Key="reports/kyc_report_1.html")
+                html_content = response['Body'].read().decode('utf-8')
+                components.html(html_content, height=800, width=400, scrolling=True)
+
             st.download_button(
                 label="Download Zipped Customer Profile",
                 data=zip_buffer,
                 file_name="data.zip",
                 mime="application/zip"
             )
-
-            if sow_report['statusCode'] == 200:
-                response = s3.get_object(Bucket="sowreport", Key="reports/kyc_report_1.html")
-                html_content = response['Body'].read().decode('utf-8')
-                components.html(html_content, height=800, width=400, scrolling=True)
             
 
 
