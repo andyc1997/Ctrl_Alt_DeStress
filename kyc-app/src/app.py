@@ -3,11 +3,13 @@ import pandas as pd
 import boto3
 import json
 import time 
+import streamlit.components.v1 as components
 
 from io import StringIO
 from utils.folder_manager import create_client_entry, check_client_entry, get_client_entry
 from utils.invoke_lambda_function import invoke_lambda_function
 from utils.invoke_s3 import s3_read_csv, s3_write_csv, s3_file_exists, s3_read_json
+
 
 def main():
     st.title("KYC Intelligent Agent Management")
@@ -113,16 +115,16 @@ def main():
                 else:
                     st.error("Webscraping Agent failed to run.")
         else:
-            external_data_bucket = st.session_state.client_entry['Proc2_Bucket']
-            external_data_object = st.session_state.client_entry['Proc2_Object']
+            # external_data_bucket = st.session_state.client_entry['Proc2_Bucket']
+            # external_data_object = st.session_state.client_entry['Proc2_Object']
             st.info(f"This client has already been processed by the Webscraping Agent.")
-            external_data = s3_read_json(s3, external_data_bucket, external_data_object)
-            st.download_button(
-                        label=">> Download Extracted Data",
-                        data=json.dumps(external_data),
-                        file_name=external_data_object,
-                        mime="application/json"
-                    )
+            # external_data = s3_read_json(s3, external_data_bucket, external_data_object)
+            # st.download_button(
+            #             label=">> Download Extracted Data",
+            #             data=json.dumps(external_data),
+            #             file_name=external_data_object,
+            #             mime="application/json"
+            #         )
 
     # Run StreetView agent
     if st.button("Run StreetView Agent"):
@@ -150,7 +152,7 @@ def main():
                     # display image
                     response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
                     image_bytes = response['Body'].read()
-                    st.image(image_bytes)
+                    st.image(image_bytes, width=200)
                 else:
                     st.info("StreetView Agent failed to run. Please try again later.")
         else:
@@ -161,7 +163,7 @@ def main():
             image_bytes = response['Body'].read()
 
             st.info("This client has already been processed by the StreetView Agent.")
-            st.image(image_bytes, width=400)    
+            st.image(image_bytes, width=200)    
 
     if 'show_textract_uploader' not in st.session_state:
         st.session_state.show_textract_uploader = False
@@ -291,9 +293,28 @@ def main():
 
         input_narratives = (df_clnt_info + webscrape_txt + json_textract + json_textract2 + transcribe_txt).strip(' ').replace('"', "'")
         print(input_narratives)
+        df_consol = None 
+        sow_report = None 
         with st.spinner("Running AI agents..."):
-            response = invoke_lambda_function("deepseek-json-bedrock ", payload={'INPUT_TEXT': input_narratives})
+            response = invoke_lambda_function("deepseek-json-bedrock", payload={'INPUT_TEXT': input_narratives})
             df_consol = s3_read_csv(s3, 'sowreport', 'sow_data.csv')
+            sow_report = invoke_lambda_function("sowreport", payload={})
+
+        if sow_report['statusCode'] == 200:
+            response = s3.get_object(Bucket="sowreport", Key="sowreport_template.html")
+            html_content = response['Body'].read().decode('utf-8')
+            components.html(html_content, height=800, scrolling=True)
+
+            # st.download_button(
+            #              label=">> Download Extracted Data",
+            #              data=json.dumps(external_data),
+            #              file_name=external_data_object,
+            #              mime="application/json"
+            #          )
+        
+
+        
+
             
 
 
