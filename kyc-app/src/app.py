@@ -220,8 +220,8 @@ def main():
                 response = invoke_lambda_function("rmcall", payload={'mp3': audio_file})
                 if response['statusCode'] == 200:
                     # get response
-                    transcribe_bucket = response['bucket']
-                    transcribe_object = response['s3_key']
+                    transcribe_bucket = response['body']['bucket']
+                    transcribe_object = response['body']['s3_key']
                     st.success("Voice-to-text completed successfully!")
 
                     # update entry table 
