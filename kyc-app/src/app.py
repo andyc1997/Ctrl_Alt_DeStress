@@ -165,6 +165,7 @@ def main():
         st.session_state.show_textract_uploader = True
 
     if st.session_state.show_textract_uploader:
+        st.session_state.df_entry_table = s3_read_csv(s3, entry_bucket_name, entry_object_key)
         if pd.isna(st.session_state.client_entry['Proc3']):
             uploaded_file = st.file_uploader("Choose a file to upload")
             if uploaded_file is not None:
