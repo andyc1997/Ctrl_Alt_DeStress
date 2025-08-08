@@ -47,13 +47,13 @@ This system automates **KYC (Know Your Customer)** and **Source of Wealth (SOW)*
 - RM **calls the client** and call logs are retrieved from the internal recording system
 
 ### AI Processing (Parallel Steps)
-**Step B8.1:** Call recording is processed by **Amazon Transcribe** (generates subtitles).  
+**Step B8.1:** Call recording is processed by **Amazon Transcribe** with amazon.titan-text-express-v1 to generate subtitles.  
 **Step B8.2:** RM uploads **client-submitted documents**.  
-**Step B8.3:** Documents are processed by **Textract (OCR)** then **Bedrock (AI keyword analysis via Nova model)**.
+**Step B8.3:** Documents are processed by **Textract (OCR)** then **Bedrock** (AI keyword analysis via amazon.titan-text-express-v1).
 
 ### Consolidation & Output
 **Step B9:**
-- Bedrock **analyzes corroboration level** across all data sources
+- Bedrock **analyzes corroboration level** across all data sources with amazon.titan-text-express-v1
 - Generates a **final SOW form**
 
 **Step B10:** KYC checker reviews and the **process is complete**.
