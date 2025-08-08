@@ -1,9 +1,11 @@
 import streamlit as st
 import pandas as pd
 import boto3
+import io
 import json
 import time 
 import streamlit.components.v1 as components
+import zipfile 
 
 from io import StringIO
 from utils.folder_manager import create_client_entry, check_client_entry, get_client_entry
@@ -300,10 +302,31 @@ def main():
             df_consol = s3_read_csv(s3, 'sowreport', 'sow_data.csv')
             sow_report = invoke_lambda_function("sowreport", payload={})
 
-        if sow_report['statusCode'] == 200:
-            response = s3.get_object(Bucket="sowreport", Key="reports/kyc_report_1.html")
-            html_content = response['Body'].read().decode('utf-8')
-            components.html(html_content, height=800, scrolling=True)
+            streetview_bucket = st.session_state.client_entry['Proc1_Bucket']
+            streetview_object = st.session_state.client_entry['Proc1_Object']
+            response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
+            image_bytes = response['Body'].read()
+
+            zip_dict = {'image': image_bytes, 'webscraped_data': webscrape_txt, 'json_textract': json_textract, 'json_textract2': json_textract2, 
+                        'transcribe_txt': transcribe_txt, 'df_clnt_info': df_clnt_info}
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+                zf.writestr("data.json", json.dumps(zip_dict))
+            zip_buffer.seek(0)
+
+            st.download_button(
+                label="Download Zipped Customer Profile",
+                data=zip_buffer,
+                file_name="data.zip",
+                mime="application/zip"
+            )
+
+            if sow_report['statusCode'] == 200:
+                response = s3.get_object(Bucket="sowreport", Key="reports/kyc_report_1.html")
+                html_content = response['Body'].read().decode('utf-8')
+                components.html(html_content, height=800, width=400, scrolling=True)
+            
+
 
             # st.download_button(
             #              label=">> Download Extracted Data",
