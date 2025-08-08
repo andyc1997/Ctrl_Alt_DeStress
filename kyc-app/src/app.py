@@ -169,6 +169,7 @@ def main():
 
                 # Give it some buffer time and only show download button if the file is processed
                 output_key = "output/filtered_" + uploaded_file.name.split('.')[0] + ".csv"
+                output_fname = "filtered_" + uploaded_file.name.split('.')[0] + ".csv"
                 with st.spinner("Running AI agents..."):
                     time.sleep(30)
                     exists = s3_file_exists(s3, output_bucket, output_key)
@@ -176,7 +177,7 @@ def main():
                         st.download_button(
                             label=">> Download Extracted Data",
                             data=s3_read_csv(s3, output_bucket, output_key),
-                            file_name=output_key,
+                            file_name=output_fname,
                             mime="text/csv"
                         )
                 
