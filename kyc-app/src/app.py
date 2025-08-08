@@ -167,56 +167,59 @@ def main():
     if st.session_state.show_textract_uploader:
         st.session_state.df_entry_table = s3_read_csv(s3, entry_bucket_name, entry_object_key)
         if pd.isna(st.session_state.client_entry['Proc3']):
-            uploaded_file = st.file_uploader("Choose a file to upload")
-            if uploaded_file is not None:
-                # Read file bytes
-                file_bytes = uploaded_file.read()
-                # Define S3 bucket and object key (filename)
-                upload_bucket = "doc-input-external"
-                upload_key = uploaded_file.name
-                output_bucket = "output-internal-cld"
+            uploaded_files = st.file_uploader("Choose a file to upload", accept_multiple_files=True)
+            output_keys = ''
+            for i, uploaded_file in enumerate(uploaded_files):
+                if uploaded_file is not None:
+                    # Read file bytes
+                    file_bytes = uploaded_file.read()
+                    # Define S3 bucket and object key (filename)
+                    upload_bucket = "doc-input-external"
+                    upload_key = uploaded_file.name
+                    output_bucket = "output-internal-cld"
 
-                # Upload to S3
-                s3.put_object(Bucket=upload_bucket, Key=upload_key, Body=file_bytes)
-                st.success(f"File '{uploaded_file.name}' uploaded to S3 bucket '{upload_bucket}'.")
+                    # Upload to S3
+                    s3.put_object(Bucket=upload_bucket, Key=upload_key, Body=file_bytes)
+                    st.success(f"File '{uploaded_file.name}' uploaded to S3 bucket '{upload_bucket}'.")
 
-                # Give it some buffer time and only show download button if the file is processed
-                output_key = "output/filtered_" + uploaded_file.name.split('.')[0] + ".csv"
-                output_fname = "filtered_" + uploaded_file.name.split('.')[0] + ".csv"
-                exists = False
+                    # Give it some buffer time and only show download button if the file is processed
+                    output_key = "output/filtered_" + uploaded_file.name.split('.')[0] + ".csv"
+                    output_fname = "filtered_" + uploaded_file.name.split('.')[0] + ".csv"
+                    exists = False
 
-                with st.spinner("Running AI agents..."):
-                    time.sleep(30)
-                    exists = s3_file_exists(s3, output_bucket, output_key)
-                if exists:
-                    st.download_button(
-                        label="Download Extracted Data",
-                        data=s3_read_csv(s3, output_bucket, output_key).to_csv(index=False),
-                        file_name=output_fname,
-                        mime="text/csv"
-                    )
-                
-                # Anyway, Textract should always extract something, let write it to the entry table and wait for its completion
-                cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
-                st.session_state.df_entry_table.loc[cu_pointer, 'Proc3'] = 'Completed'
-                st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Bucket'] = output_bucket
-                st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Object'] = output_key
-                s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
+                    with st.spinner("Running AI agents for document " + str(i)):
+                        time.sleep(30)
+                        exists = s3_file_exists(s3, output_bucket, output_key)
+                    # if exists:
+                    #     st.download_button(
+                    #         label="Download Extracted Data",
+                    #         data=s3_read_csv(s3, output_bucket, output_key).to_csv(index=False),
+                    #         file_name=output_fname,
+                    #         mime="text/csv"
+                    #     )
+                    
+                    # Anyway, Textract should always extract something, let write it to the entry table and wait for its completion
+                    cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc3'] = 'Completed'
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Bucket'] = output_bucket
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Object'] = output_keys + ';' + output_key
+                    s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
+            if output_keys != '':
+                st.success("Textract Agent completed successfully! The following files are processed: " + output_keys)
+
         else:
             output_bucket = st.session_state.client_entry['Proc3_Bucket']
-            output_key = st.session_state.client_entry['Proc3_Object']
+            output_keys = st.session_state.client_entry['Proc3_Object']
             st.info(f"This client has already been processed by the Textract Agent.")
-            extracted_output = s3_read_csv(s3, output_bucket, output_key).to_csv(index=False)
-            st.download_button(
-                        label="Download Extracted Data",
-                        data=extracted_output,
-                        file_name=output_key.split('/')[-1],
-                        mime="text/csv"
-                    )
+            if not pd.isna(output_keys):
+                st.info("The following files have been processed: " + output_keys)
+            
+
     # Run Transcribe agent
     if st.button("Run Voice-to-Text Agent"):
         audio_file = 'banker_conversation_vo.mp3' # audio file should be automatically generated from source system. For demo, we use a static file.
         st.info(f"The following audio file is found and will be transcribed to text: {audio_file}")
+        st.session_state.df_entry_table = s3_read_csv(s3, entry_bucket_name, entry_object_key)
 
         if pd.isna(st.session_state.client_entry['Proc4']):
             with st.spinner("Running AI agents..."):
