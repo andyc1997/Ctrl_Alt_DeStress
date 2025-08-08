@@ -1,4 +1,6 @@
 # 2025 Citi x AWS Hackathon - KYC & Source of Wealth (SOW) Verification Workflow
+This is a 3-days Citi Wealth Global Hackathon #HackToTheFuture project that leveraging AWS services to deploy a streamlit application for automating and streamlining the KYC and SOW verification process.     
+
 *Automated Client Due Diligence Application*
 ![work flow](./architectural_design.png)
 
@@ -9,6 +11,14 @@ This system automates **KYC (Know Your Customer)** and **Source of Wealth (SOW)*
 - Generating a consolidated **SOW report** for KYC checkers
 
 ## 2. Backend Workflow
+### AWS services used
+1. **EC2 :** Provides resizable virtual servers (instances) in the cloud. Offers flexible OS/software choices, scalable compute capacity, and pay-as-you-go pricing
+2. **S3 :** Scalable object storage for data like files, images, and backups. Offers high durability, versioning, access controls, and integration with other AWS services  
+3. **Lambda :** Serverless compute service that runs code in response to events (e.g., HTTP requests, file uploads) without managing servers. Scales automatically; pay only for execution time
+4. **Bedrock :** Fully managed service for building generative AI applications using foundation models (e.g., text/image generation). Simplifies access to models like Claude or Stable Diffusion via an API
+5. **Textract :** Extracts text, structured data (tables, forms), and key-value pairs from scanned documents or images using OCR and machine learning. Automates document processing
+6. **Transcribe :** Converts speech to text automatically. Supports audio/video transcription in multiple languages, with speaker identification and real-time processing  
+7. **IAM :** Manages user access and permissions for AWS resources. Defines policies, roles, and groups to securely control authentication and authorization  
 
 ### Trigger
 **Step B1-2:** System detects a **KYC alert** (periodic scan or new client onboarding) and generates a **KYC list** in the database.
