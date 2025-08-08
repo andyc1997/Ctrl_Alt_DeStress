@@ -2,7 +2,6 @@
 This function is to web scrape customer's working background based on customer name, company name, company address.  
 It is triggered by a button event in streamlit user-interface.  
 
-**Lambda Function URL**: <[https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions/street_view?tab=code](https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions/externaldataprocesscode?tab=code)>  
 
 **Environment Variables / Parameters**:    
    <!-- * ADD_SRC_S3_BUCKET : string, S3 bucket for database of customer data  -->
