@@ -307,11 +307,12 @@ def main():
             response = s3.get_object(Bucket=streetview_bucket, Key=streetview_object)
             image_bytes = response['Body'].read()
 
-            zip_dict = {'image': image_bytes, 'webscraped_data': webscrape_txt, 'json_textract': json_textract, 'json_textract2': json_textract2, 
+            zip_dict = {'webscraped_data': webscrape_txt, 'json_textract': json_textract, 'json_textract2': json_textract2, 
                         'transcribe_txt': transcribe_txt, 'df_clnt_info': df_clnt_info}
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
                 zf.writestr("data.json", json.dumps(zip_dict))
+                zf.writestr("image.png", image_bytes)
             zip_buffer.seek(0)
 
             st.download_button(
