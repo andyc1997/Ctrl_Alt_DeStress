@@ -49,6 +49,8 @@ def main():
             is_new_case, client_entry = check_client_entry(str(client_id), entry_bucket_name, entry_object_key)
             if is_new_case:
                 st.info(f"The client for '{client_id}' does not exist.")
+                _, client_entry = create_client_entry(str(client_id), entry_bucket_name, entry_object_key) 
+                st.success(f"New case for client '{client_id}' created successfully!")
             else:
                 st.success(f"The client for '{client_id}' exists.")
                 st.session_state.client_entry = client_entry.iloc[0].to_dict()
@@ -232,18 +234,17 @@ def main():
                     s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
                     
                     # display json
-                    response = s3_read_json(transcribe_bucket, transcribe_object)
-                    json_bytes = response['Body'].read()
-                    st.success("Voice-to-Text Agent completed successfully! Message preview: " + json_bytes['body']['transcription'])
+                    response = s3_read_json(s3, transcribe_bucket, transcribe_object)
+                    st.success("Voice-to-Text Agent completed successfully! Message preview: " + response['body']['transcription'])
                 else:
                     st.info("Voice-to-Text Agent failed to run. Please try again later.")
         else:
             transcribe_bucket = st.session_state.client_entry['Proc4_Bucket']
             transcribe_object = st.session_state.client_entry['Proc4_Object']
 
-            response = s3.get_object(transcribe_bucket, transcribe_object)
-            json_bytes = response['Body'].read()
-            st.success("Voice-to-Text Agent completed successfully! Message preview: " + json_bytes['body']['transcription'])
+            response = s3.get_object(Bucket=transcribe_bucket, Key=transcribe_object)
+            dict_from_json = json.load(response['Body'].read())
+            st.success("Voice-to-Text Agent completed successfully! Message preview: " + dict_from_json['body']['transcription'])
 
 
     
