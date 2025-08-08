@@ -27,8 +27,7 @@ This system automates **KYC (Know Your Customer)** and **Source of Wealth (SOW)*
 **Step B3:** Fetches **client PII** (Personally Identifiable Information) from the internal database.
 
 ### External Verification (Parallel Steps)
-**Step B4.1:** Triggers **Google StreetView** to capture images of the client's workplace.  
-* **Lambda Function URL**: <https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions/street_view?tab=code>
+**Step B4.1:** Triggers **Google StreetView** to capture images of the client's workplace.   
 * Event json
 ```
   {  
@@ -39,8 +38,7 @@ This system automates **KYC (Know Your Customer)** and **Source of Wealth (SOW)*
 * Return  
 <img src="./backend/lambda/google_street_view/gsv_0.jpg" width="250" height="250" />
 
-**Step B4.2:** Runs **web scraping** to collect public data (occupation, salary, location, etc.).
-* **Lambda Function URL**: <https://us-east-1.console.aws.amazon.com/lambda/home?region=us-east-1#/functions/externaldataprocesscode?tab=code>
+**Step B4.2:** Runs **web scraping** to collect public data (occupation, salary, location, etc.).  
 * Event json
 ```
   {
