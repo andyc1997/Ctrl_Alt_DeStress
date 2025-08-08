@@ -29,7 +29,7 @@ def main():
         st.session_state.df_entry_table = None
     else: 
         st.session_state.df_entry_table = s3_read_csv(s3, entry_bucket_name, entry_object_key)
-        st.session_state.client_entry = get_client_entry(st.session_state.df_entry_table, str(client_id), 'CU Number')
+        st.session_state.client_entry = get_client_entry(st.session_state.df_entry_table, str(client_id)).iloc[0].to_dict()
 
     # Create New Case
     # if st.button("Create New Case"):
@@ -256,10 +256,11 @@ def main():
         # textract csv ouputs
         # bucket: output-internal-cld
         # file name: filtered_Basic_Pay_stub_singledpage.csv
-        df_textract = s3_read_csv(s3, st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Bucket'], 
-                                  st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Object'].split(';')[1])
-        df_textract2 = s3_read_csv(s3, st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Bucket'], 
-                                   st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Object'].split(';')[2])
+        cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
+        df_textract = s3_read_csv(s3, st.session_state.client_entry['Proc3_Bucket'],
+                                  st.session_state.client_entry['Proc3_Object'].split(';')[1])
+        df_textract2 = s3_read_csv(s3, st.session_state.client_entry['Proc3_Bucket'],
+                                  st.session_state.client_entry['Proc3_Object'].split(';')[2])
         json_textract = df_textract.to_json()
         json_textract2 = df_textract2.to_json()
 
