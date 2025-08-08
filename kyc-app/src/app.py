@@ -232,28 +232,19 @@ def main():
                     s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
                     
                     # display json
-                    response = s3.get_object(transcribe_bucket, transcribe_object)
+                    response = s3_read_json(transcribe_bucket, transcribe_object)
                     json_bytes = response['Body'].read()
-                    st.download_button(
-                        label="Download Voice-to-Text Data",
-                        data=json_bytes,
-                        file_name=external_data_object,
-                        mime='application/json'
-                    )
+                    st.success("Voice-to-Text Agent completed successfully! Message preview: " + json_bytes['body']['transcription'])
                 else:
-                    st.info("StreetView Agent failed to run. Please try again later.")
+                    st.info("Voice-to-Text Agent failed to run. Please try again later.")
         else:
             transcribe_bucket = st.session_state.client_entry['Proc4_Bucket']
             transcribe_object = st.session_state.client_entry['Proc4_Object']
 
             response = s3.get_object(transcribe_bucket, transcribe_object)
             json_bytes = response['Body'].read()
-            st.download_button(
-                        label="Download Voice-to-Text Data",
-                        data=json_bytes,
-                        file_name=external_data_object,
-                        mime='application/json'
-                    )
+            st.success("Voice-to-Text Agent completed successfully! Message preview: " + json_bytes['body']['transcription'])
+
 
     
 
