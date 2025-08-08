@@ -161,14 +161,14 @@ def main():
                 # Define S3 bucket and object key (filename)
                 upload_bucket = "doc-input-external"
                 upload_key = uploaded_file.name
-                output_bucket = "output-internal-cld/output"
+                output_bucket = "output-internal-cld"
 
                 # Upload to S3
                 s3.put_object(Bucket=upload_bucket, Key=upload_key, Body=file_bytes)
                 st.success(f"File '{uploaded_file.name}' uploaded to S3 bucket '{upload_bucket}'.")
 
                 # Give it some buffer time and only show download button if the file is processed
-                output_key = "filtered_" + uploaded_file.name.split('.')[0] + ".csv"
+                output_key = "output/filtered_" + uploaded_file.name.split('.')[0] + ".csv"
                 with st.spinner("Running AI agents..."):
                     time.sleep(30)
                     exists = s3_file_exists(s3, output_bucket, output_key)
