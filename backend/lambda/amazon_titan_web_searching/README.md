@@ -1,4 +1,4 @@
-# Web Searching and Scraping - Amazon Titan Text Express v1  
+# Web Searching - Amazon Titan Text Express v1  
 This function is to web scrape customer's working background based on customer name, company name, company address.  
 It is triggered by a button event in streamlit user-interface.  
 
