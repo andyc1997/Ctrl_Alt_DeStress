@@ -221,7 +221,10 @@ def main():
                 st.info("The following files have been processed: " + output_keys)
 
     # Run Transcribe agent
-    if st.button("Run Textract Agent"):
+    with st.empty():
+        time.sleep(1)
+
+    if st.button("Run Voice-to-text Agent"):
         st.session_state.show_textract_uploader = False
         st.session_state.show_voice_to_text = True
 
@@ -249,7 +252,7 @@ def main():
                     # display json
                     response = s3.get_object(Bucket=transcribe_bucket, Key=transcribe_object)
                     dict_from_json = json.load(response['Body'])
-                    st.success("Voice-to-Text Agent completed successfully! Message preview: " + dict_from_json['body']['transcription'])
+                    st.success("Voice-to-Text Agent completed successfully! Message preview: " + dict_from_json)
                 else:
                     st.info("Voice-to-Text Agent failed to run. Please try again later.")
         else:
@@ -258,7 +261,7 @@ def main():
 
             response = s3.get_object(Bucket=transcribe_bucket, Key=transcribe_object)
             dict_from_json = json.load(response['Body'])
-            st.success("Voice-to-Text Agent completed successfully! Message preview: " + dict_from_json['body']['transcription'])
+            st.success("Voice-to-Text Agent completed successfully! Message preview: " + dict_from_json)
 
 
     
