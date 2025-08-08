@@ -1,10 +1,6 @@
-# 2025 Citi x AWS Hackathon  
-## KYC - Source of Wealth  
-
-![work flow](./architectural_design.png)
-
-# KYC & Source of Wealth (SOW) Verification Workflow
+# 2025 Citi x AWS Hackathon - KYC & Source of Wealth (SOW) Verification Workflow
 *Automated Client Due Diligence Application*
+![work flow](./architectural_design.png)
 
 ## 1. Overview
 This system automates **KYC (Know Your Customer)** and **Source of Wealth (SOW)** verification by:
