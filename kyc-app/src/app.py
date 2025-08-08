@@ -29,9 +29,10 @@ def main():
         st.session_state.df_entry_table = None
     else: 
         st.session_state.df_entry_table = s3_read_csv(s3, entry_bucket_name, entry_object_key)
-        if not st.session_state.df_entry_table.empty:
+        try:
             st.session_state.client_entry = get_client_entry(st.session_state.df_entry_table, str(client_id)).iloc[0].to_dict()
-
+        except: 
+            st.session_state.client_entry = None 
     # Create New Case
     # if st.button("Create New Case"):
     #     if client_id and len(str(client_id)) == 9:
