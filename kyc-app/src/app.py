@@ -202,7 +202,8 @@ def main():
                     cu_pointer = st.session_state.df_entry_table['CLNT_NBR'].astype(str) == str(client_id)
                     st.session_state.df_entry_table.loc[cu_pointer, 'Proc3'] = 'Completed'
                     st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Bucket'] = output_bucket
-                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Object'] = output_keys + ';' + output_key
+                    output_keys = output_keys + ';' + output_key
+                    st.session_state.df_entry_table.loc[cu_pointer, 'Proc3_Object'] = output_keys
                     s3_write_csv(s3, st.session_state.df_entry_table, entry_bucket_name, entry_object_key)
             if output_keys != '':
                 st.success("Textract Agent completed successfully! The following files are processed: " + output_keys)
