@@ -301,7 +301,7 @@ def main():
             sow_report = invoke_lambda_function("sowreport", payload={})
 
         if sow_report['statusCode'] == 200:
-            response = s3.get_object(Bucket="sowreport", Key="sowreport_template.html")
+            response = s3.get_object(Bucket="sowreport", Key="reports/kyc_report_1.html")
             html_content = response['Body'].read().decode('utf-8')
             components.html(html_content, height=800, scrolling=True)
 
